@@ -1,8 +1,8 @@
 // WebServer.h
 
 #pragma once
-#ifndef WEB_SERVER_H
-#define WEB_SERVER_H
+#ifndef WEBSTABLE_WEB_SERVER_H
+#define WEBSTABLE_WEB_SERVER_H
 
 // Network communication lib
 #include "nanonet/nanonet.h"
@@ -13,13 +13,13 @@
 // C++
 #include <iostream>
 
-namespace webstable {
+namespace webstab {
 
 class WebServer {
 public:
     // TODO
 };
 
-} // namespace webstable
+} // namespace webstab
 
-#endif // WEB_SERVER_H
+#endif // WEBSTABLE_WEB_SERVER_H

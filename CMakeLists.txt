@@ -3,11 +3,12 @@ project(WebStable)
 
 set(CXX_STANDARD_REQUIRED 11)
 
-file(GLOB SRC_LIST ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp)
+file(GLOB LIB_SRC_LIST ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp)
+file(GLOB APP_SRC_LIST ${CMAKE_CURRENT_SOURCE_DIR}/src/app/*.cpp)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
-add_executable(webstable ${SRC_LIST})
+add_executable(webstable ${APP_SRC_LIST})
 add_library(nanonet STATIC IMPORTED)
 add_library(iohub STATIC IMPORTED)
 set_target_properties(nanonet PROPERTIES IMPORTED_LOCATION ${CMAKE_CURRENT_SOURCE_DIR}/lib/libnanonet.a)
