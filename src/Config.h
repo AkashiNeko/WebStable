@@ -1,8 +1,8 @@
 // Config.h
 
 #pragma once
-#ifndef WEBSTABLE_WEB_SERVER_H
-#define WEBSTABLE_WEB_SERVER_H
+#ifndef WEBSTABLE_CONFIG_H
+#define WEBSTABLE_CONFIG_H
 
 // C
 #include <cstring>
@@ -16,8 +16,8 @@
 #include <vector>
 #include <string>
 
-// nanonet
-#include <nanonet/nanonet.h>
+// NanoNet
+#include <nanonet.h>
 
 namespace webstab {
 
@@ -38,4 +38,4 @@ public:
 
 } // namespace webstab
 
-#endif // WEBSTABLE_WEB_SERVER_H
+#endif // WEBSTABLE_CONFIG_H

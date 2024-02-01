@@ -4,17 +4,23 @@
 #ifndef WEBSTABLE_WEB_SERVER_H
 #define WEBSTABLE_WEB_SERVER_H
 
-// Network communication lib
-#include "nanonet.h"
-
 // C++
 #include <iostream>
+
+// WebStable
+#include "Config.h"
+
+// NanoNet
+#include "nanonet.h"
+
+// IOHub
+#include "iohub.h"
 
 namespace webstab {
 
 class WebServer {
 public:
-    WebServer()
+    WebServer(const Config& config);
     // TODO
 };
 
