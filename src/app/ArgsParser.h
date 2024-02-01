@@ -22,7 +22,7 @@ class ArgsParser {
 public:
     ArgsParser(int argc, char** argv);
     void parse();
-    std::string conf_filepath();
+    std::string_view conf_filepath();
 };
 
 } // namespace webstab

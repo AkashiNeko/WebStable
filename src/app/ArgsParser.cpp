@@ -1,7 +1,6 @@
 // ArgsParser.cpp
 
 #include "ArgsParser.h"
-
 namespace webstab {
 
 namespace {
@@ -22,7 +21,6 @@ ArgsParser::ArgsParser(int argc, char** argv)
     : opt_h_(false)
     , opt_v_(false)
     , opt_c_(false)
-    , conf_file_("webstable.conf")
 {
     for (int i = 1; i < argc; ++i)
         args.push_back(argv[i]);
@@ -34,10 +32,10 @@ void ArgsParser::parse() {
     for (auto& arg : this->args) {
         size_t len = arg.size();
         if (pre_optc) {
-            // The last argument contained the
-            // option 'c', get config file name
-            conf_file_ = arg;
+            // if the last argument is option '-c'
+            // then get path of configuration file
             pre_optc = false;
+            conf_file_ = arg;
         } else if (arg[0] == '-') {
             // parse option
             for (size_t i = 1; i < len; ++i) {
@@ -54,7 +52,8 @@ void ArgsParser::parse() {
                     opt_c_ = pre_optc = true;
                     break;
                 default:
-                    std::cerr << "Invalid option: " << arg[i] << std::endl;
+                    std::cerr << "Invalid option: "
+                        << arg[i] << std::endl;
                     exit(-1);
                 }
             }
@@ -73,8 +72,8 @@ void ArgsParser::parse() {
     // OK
 }
 
-std::string ArgsParser::conf_filepath() {
-    return std::string(conf_file_);
+std::string_view ArgsParser::conf_filepath() {
+    return conf_file_;
 }
 
 } // namespace webstab
