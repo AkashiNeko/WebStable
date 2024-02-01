@@ -5,10 +5,7 @@
 #define WEBSTABLE_WEB_SERVER_H
 
 // Network communication lib
-#include "nanonet/nanonet.h"
-
-// Concurrency model lib
-#include "iohub/iohub.h"
+#include "nanonet.h"
 
 // C++
 #include <iostream>
@@ -17,6 +14,7 @@ namespace webstab {
 
 class WebServer {
 public:
+    WebServer()
     // TODO
 };
 

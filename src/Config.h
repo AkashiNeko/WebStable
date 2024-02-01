@@ -23,18 +23,17 @@ namespace webstab {
 
 class Config {
 
-    std::string filename_;
-
-    struct {
-        nano::AddrPort listen;
-    } server_;
-
+    nano::AddrPort srv_listen_;
     std::unordered_map<std::string, std::string> static_;
     std::map<unsigned, std::string> error_;
 
 public:
+    Config();
     Config(std::filesystem::path file = "");
     std::string to_string() const;
+
+    nano::AddrPort get_listen() const;
+    void set_listen(const nano::AddrPort& addr_port);
 };
 
 } // namespace webstab

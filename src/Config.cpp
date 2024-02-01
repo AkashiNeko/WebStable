@@ -1,23 +1,20 @@
 #include "Config.h"
 
-namespace webstab {
-
 namespace {
 
 const char* DefaultConfName =
     "webstable.conf";
 
 const char* DefaultConfText =
-    "[server]"                   "\n"
-    "listen=0.0.0.0:80"          "\n"
-    "host="                      "\n"
-    ""                           "\n"
-    "[static]"                   "\n"
-    "/=www/"                     "\n"
-    ""                           "\n"
-    "[error]"                    "\n"
-    "404=/404.html"              "\n"
-    "500,502,503,504=/50x.html"  "\n";
+    "[server]"                          "\n"
+    "    listen = 0.0.0.0:80"           "\n"
+    ""                                  "\n"
+    "[static]"                          "\n"
+    "    / = www/"                      "\n"
+    ""                                  "\n"
+    "[error]"                           "\n"
+    "    404 = /404.html"               "\n"
+    "    500 502 503 504 = /50x.html"   "\n";
 
 void rm_front_blank_(std::string& s) {
     if (!s.empty()) {
@@ -102,21 +99,34 @@ void split_digit_str_(const std::string& key,
 
 } // namespace
 
-Config::Config(std::filesystem::path file) {
+namespace webstab {
 
+Config::Config()
+    : srv_listen_({"0.0.0.0", 80})
+    , static_({{"/", "www"}})
+    , error_({{404, "/404.html"}})
+{
+}
+
+Config::Config(std::filesystem::path file)
+    : srv_listen_({"0.0.0.0", 80})
+{
     is_valid_path_(file);
 
     // read the configuration file
     std::ifstream conf(file, std::ios::in);
     if (conf.fail()) {
         int err = errno;
-        std::cerr << "Open configuration file failed: "
+        std::cerr << "Read configuration file "
+            << file << " failed: "
             << std::strerror(err) << std::endl;
         exit(err);
     }
     std::string line;
     size_t line_num = 1;
-    enum { Global, Server, Static, Error } cur = Global; // section
+
+    // current section
+    enum { Global, Server, Static, Error } cur = Global;
 
     // traverse each line of the file
     while (std::getline(conf, line)) {
@@ -172,7 +182,7 @@ Config::Config(std::filesystem::path file) {
             if (cur == Server) {
                 if (key == "listen") {
                     try {
-                        this->server_.listen = parse_addr_port_(value);
+                        this->srv_listen_ = parse_addr_port_(value);
                     } catch (const std::exception& e) {
                         std::cerr << file.c_str() << ':' << line_num
                             << ": Parse listen address failed: " << e.what() << std::endl;
@@ -202,7 +212,7 @@ Config::Config(std::filesystem::path file) {
 
 std::string Config::to_string() const {
     std::string res =  "[server]\n"
-        "\tlisten = " + server_.listen.to_string() + '\n';
+        "\tlisten = " + srv_listen_.to_string() + '\n';
     if (!static_.empty()) {
         res += "\n[static]\n";
         for (auto& [k, v] : static_)
@@ -214,6 +224,14 @@ std::string Config::to_string() const {
             res += '\t' + std::to_string(k) + " = " + v + '\n';
     }
     return res;
+}
+
+nano::AddrPort Config::get_listen() const {
+    return srv_listen_;
+}
+
+void Config::set_listen(const nano::AddrPort& addr_port) {
+    srv_listen_ = addr_port;
 }
 
 } // namespace webstab
