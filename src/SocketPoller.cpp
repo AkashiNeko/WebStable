@@ -22,19 +22,26 @@ iohub::PollerBase* create_poller_(PollerType type) {
 
 } // anonymous namespace
 
-SocketPoller::SocketPoller(PollerType type, int server_fd)
+SocketPoller::SocketPoller(PollerType type)
     : poller_(create_poller_(type))
-    , server_fd_(server_fd)
+    , server_fd_(-1)
 {
 }
 
-void SocketPoller::insert(nano::Socket& sock, int event) {
+void SocketPoller::set_server(int fd) {
+    if (server_fd_ == -1) {
+        server_fd_ = fd;
+        poller_->insert(fd, iohub::IOHUB_IN);
+    }
+}
+
+void SocketPoller::insert(const nano::Socket& sock, int event) {
     int fd = sock.get_sock();
     poller_->insert(fd, event);
     sock_map_.insert({fd, sock});
 }
 
-void SocketPoller::erase(nano::Socket& sock) {
+void SocketPoller::erase(const nano::Socket& sock) {
     int fd = sock.get_sock();
     poller_->erase(fd);
     sock_map_.erase(fd);
@@ -45,6 +52,14 @@ std::pair<bool, nano::Socket*> SocketPoller::wait(int timeout) {
     if (fd == -1) return {false, nullptr};
     if (fd == server_fd_) return {true, nullptr};
     return {false, &sock_map_[fd]};
+}
+
+bool SocketPoller::is_open() const {
+    return poller_->is_open();
+}
+
+void SocketPoller::close() {
+    poller_->close();
 }
 
 } // namespace webstab

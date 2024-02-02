@@ -11,7 +11,6 @@ int main(int argc, char* argv[]) {
     args.parse();
     webstab::Config config(args.conf_filepath());
     webstab::WebServer server(config);
-    // server.load(config);
-    // return server.exec();
+    return server.exec();
     return 0;
 }

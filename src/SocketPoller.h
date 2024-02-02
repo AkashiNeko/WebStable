@@ -25,12 +25,15 @@ class SocketPoller {
     std::unordered_map<int, nano::Socket> sock_map_;
     std::unique_ptr<iohub::PollerBase> poller_;
     int server_fd_;
-public:
 
-    SocketPoller(PollerType type, int server_fd);
-    void insert(nano::Socket& sock, int event);
-    void erase(nano::Socket& sock);
+public:
+    SocketPoller(PollerType type);
+    void set_server(int fd);
+    void insert(const nano::Socket& sock, int event);
+    void erase(const nano::Socket& sock);
     std::pair<bool, nano::Socket*> wait(int timeout = -1);
+    bool is_open() const;
+    void close();
 
 }; // class SocketPoller
 

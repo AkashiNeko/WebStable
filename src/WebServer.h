@@ -15,10 +15,11 @@ namespace webstab {
 
 class WebServer {
     nano::ServerSocket server_;
-    iohub::PollerBase* poller_;
+    SocketPoller poller_;
 
 public:
     WebServer(const Config& config);
+    int exec();
     // TODO
 };
 
