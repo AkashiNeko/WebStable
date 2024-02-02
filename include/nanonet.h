@@ -1,8 +1,32 @@
-// nanonet.h
+// File:     nanonet.h
+// Author:   AkashiNeko
+// Project:  NanoNet - Version 2.1
+// Github:   https://github.com/AkashiNeko/NanoNet/
+
+/* Copyright AkashiNeko. All rights reserved.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ *
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * 
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+ * FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+ * COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+ * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,OUT OF OR IN
+ * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
 
 #pragma once
-#ifndef NANONET_H
-#define NANONET_H
+#ifndef __NANONET__
+#define __NANONET__ 2.1
 
 #if __cplusplus < 201103L
     #error "Nanonet requires at least C++11"
@@ -53,37 +77,6 @@ public:
         return except_msg_.c_str();
     }
 };
-
-// throw exceptions
-#if __cplusplus >= 201703L
-
-template <class ExceptType = NanoExcept, class ...Args>
-inline void assert_throw(bool condition, const Args&... args) {
-    if (condition) return;
-    std::string s;
-    ((s += args), ...);
-    throw ExceptType(std::move(s));
-}
-
-#else // 201103L <= __cplusplus < 201703L
-
-inline void append_string_(std::string&) {}
-
-template <class T, class ...Args>
-inline void append_string_(std::string& s, const T& arg, const Args&... args) {
-    s += arg;
-    append_string_(s, args...);
-}
-
-template <class ExceptType = NanoExcept, class ...Args>
-inline void assert_throw(bool condition, const Args&... args) {
-    if (condition) return;
-    std::string s;
-    append_string_(s, args...);
-    throw ExceptType(std::move(s));
-}
-
-#endif // __cplusplus
 
 class Addr {
 
@@ -178,6 +171,7 @@ public:
     // ctor & dtor
     AddrPort() = default;
     AddrPort(const Addr& addr, const Port& port);
+    AddrPort(const char* addrport, char separator = ':');
     virtual ~AddrPort() = default;
 
     // getter & setter
@@ -234,12 +228,12 @@ public:
     // set socket option
     template <class OptionType>
     inline bool set_option(int level, int optname, const OptionType& optval) const {
-        return ::setsockopt(socket_, level, optname, (const char*)&optval, sizeof(optval)) == 0;
+        return 0 == ::setsockopt(socket_, level, optname, (const char*)&optval, sizeof(optval));
     }
 
     template <class OptionType>
     inline bool get_option(int level, int optname, OptionType& optval) const {
-        return ::getsockopt(socket_, level, optname, (const char*)&optval, sizeof(optval)) == 0;
+        return 0 == ::getsockopt(socket_, level, optname, (const char*)&optval, sizeof(optval));
     }
 
 }; // class SocketBase
@@ -266,7 +260,7 @@ public:
     int send(const std::string msg) const;
 
     // receive from remote
-    int receive(char *buf, size_t buf_size) const;
+    int receive(char* buf, size_t buf_size) const;
 
     // set receive timeout
     bool recv_timeout(long ms) const;
@@ -335,4 +329,4 @@ public:
 
 } // namespace nano
 
-#endif // NANONET_H
+#endif // __NANONET__

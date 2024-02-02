@@ -24,12 +24,13 @@ namespace webstab {
 class Config {
 
     nano::AddrPort srv_listen_;
+    std::string srv_poller_;
     std::unordered_map<std::string, std::string> static_;
     std::map<unsigned, std::string> error_;
 
 public:
     Config();
-    Config(std::filesystem::path file = "");
+    Config(std::filesystem::path file);
     std::string to_string() const;
 
     nano::AddrPort get_listen() const;

@@ -9,16 +9,14 @@
 
 // WebStable
 #include "Config.h"
-
-// NanoNet
-#include "nanonet.h"
-
-// IOHub
-#include "iohub.h"
+#include "SocketPoller.h"
 
 namespace webstab {
 
 class WebServer {
+    nano::ServerSocket server_;
+    iohub::PollerBase* poller_;
+
 public:
     WebServer(const Config& config);
     // TODO

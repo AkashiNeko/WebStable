@@ -102,14 +102,13 @@ void split_digit_str_(const std::string& key,
 namespace webstab {
 
 Config::Config()
-    : srv_listen_({"0.0.0.0", 80})
-    , static_({{"/", "www"}})
-    , error_({{404, "/404.html"}})
+    : srv_listen_("0.0.0.0:80")
+    , srv_poller_("epoll")
 {
 }
 
 Config::Config(std::filesystem::path file)
-    : srv_listen_({"0.0.0.0", 80})
+    : Config()
 {
     is_valid_path_(file);
 
