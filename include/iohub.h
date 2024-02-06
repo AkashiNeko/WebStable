@@ -49,7 +49,6 @@
 namespace iohub {
 
 // except
-
 class IOHubExcept : public std::exception {
     std::string except_msg_;
 public:
@@ -61,49 +60,15 @@ public:
     }
 };
 
-// throw exceptions
-#if __cplusplus >= 201703L
-
-template <class ExceptType = IOHubExcept, class ...Args>
-inline void assert_throw(bool condition, const Args&... args) {
-    if (condition) return;
-    std::string s;
-    ((s += args), ...);
-    throw ExceptType(std::move(s));
-}
-
-#else // 201103L <= __cplusplus < 201703L
-
-inline void append_string_(std::string&) {}
-
-template <class T, class ...Args>
-inline void append_string_(std::string& s, const T& arg, const Args&... args) {
-    s += arg;
-    append_string_(s, args...);
-}
-
-template <class ExceptType = IOHubExcept, class ...Args>
-inline void assert_throw(bool condition, const Args&... args) {
-    if (condition) return;
-    std::string s;
-    append_string_(s, args...);
-    throw ExceptType(std::move(s));
-}
-
-#endif // __cplusplus
-
-
 // type pair {fd: int, event: int}
 using fd_event_t = std::pair<int, int>;
 
-
-// type Event
+// enum Event
 enum Event {
     IOHUB_IN  = 0x01,
     IOHUB_PRI = 0x02,
     IOHUB_OUT = 0x04,
 };
-
 
 // PollerBase
 class PollerBase {
@@ -119,11 +84,11 @@ public:
     virtual void insert(int fd, int events) = 0;
     virtual void erase(int fd) = 0;
     virtual void modify(int fd, int events) = 0;
-    virtual int get_event(int fd) const noexcept = 0;
     virtual size_t size() const noexcept = 0;
     virtual void clear() noexcept = 0;
 
-    virtual fd_event_t wait(int timeout = -1) = 0;
+    virtual size_t wait(std::vector<fd_event_t>& fdevt_arr,
+        int timeout = -1) = 0;
 
     virtual bool is_open() const noexcept = 0;
     virtual void close() noexcept = 0;
@@ -132,10 +97,9 @@ public:
 
 
 // Select
-
 class Select : public PollerBase {
-    std::queue<fd_event_t> event_queue_;
     std::vector<unsigned char> fd_hasharr_;
+    std::vector<fd_event_t> cache_;
     size_t max_, size_, readsz_, writesz_, exceptsz_;
     fd_set readfds_, writefds_, exceptfds_;
     bool is_open_;
@@ -147,23 +111,20 @@ public:
     virtual void insert(int fd, int events) override;
     virtual void erase(int fd) override;
     virtual void modify(int fd, int events) override;
-    virtual int get_event(int fd) const noexcept override;
     virtual size_t size() const noexcept override;
     virtual void clear() noexcept override;
 
-    virtual fd_event_t wait(int timeout = -1);
+    virtual size_t wait(std::vector<fd_event_t>& fdevt_arr,
+        int timeout = -1) override;
 
     virtual bool is_open() const noexcept override;
     virtual void close() noexcept override;
 
 }; // class Select
 
-
 // Poll
-
 class Poll : public PollerBase {
-    std::queue<fd_event_t> event_queue_;
-    std::unordered_map<int, int> fd_map_;
+    std::vector<size_t> fd_map_;
     std::vector<pollfd> pollfd_arr_;
     bool is_open_;
 
@@ -174,11 +135,11 @@ public:
     virtual void insert(int fd, int events) override;
     virtual void erase(int fd) override;
     virtual void modify(int fd, int events) override;
-    virtual int get_event(int fd) const noexcept override;
     virtual size_t size() const noexcept override;
     virtual void clear() noexcept override;
 
-    virtual fd_event_t wait(int timeout = -1);
+    virtual size_t wait(std::vector<fd_event_t>& fdevt_arr,
+        int timeout = -1) override;
 
     virtual bool is_open() const noexcept override;
     virtual void close() noexcept override;
@@ -187,11 +148,11 @@ public:
 
 
 // Epoll
-
 class Epoll : public PollerBase {
-    std::queue<fd_event_t> event_queue_;
-    std::unordered_map<int, int> fd_map_;
+
     int epoll_fd_;
+    size_t size_;
+    epoll_event* event_arr_;
 
 public:
     Epoll();
@@ -200,11 +161,11 @@ public:
     virtual void insert(int fd, int events) override;
     virtual void erase(int fd) override;
     virtual void modify(int fd, int events) override;
-    virtual int get_event(int fd) const noexcept override;
     virtual size_t size() const noexcept override;
     virtual void clear() noexcept override;
 
-    virtual fd_event_t wait(int timeout = -1);
+    virtual size_t wait(std::vector<fd_event_t>& fdevt_arr,
+        int timeout = -1) override;
 
     virtual bool is_open() const noexcept override;
     virtual void close() noexcept override;

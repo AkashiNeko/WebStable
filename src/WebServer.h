@@ -9,18 +9,20 @@
 
 // WebStable
 #include "Config.h"
-#include "SocketPoller.h"
+
+// iohub
+#include "iohub.h"
 
 namespace webstab {
 
 class WebServer {
     nano::ServerSocket server_;
-    SocketPoller poller_;
+    std::unordered_map<int, nano::Socket> sock_map_;
+    std::unique_ptr<iohub::PollerBase> poller_;
 
 public:
     WebServer(const Config& config);
     int exec();
-    // TODO
 };
 
 } // namespace webstab
