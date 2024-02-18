@@ -1,6 +1,6 @@
 // File:     nanonet.h
 // Author:   AkashiNeko
-// Project:  NanoNet - Version 2.31
+// Project:  NanoNet - Version 2.3
 // Github:   https://github.com/AkashiNeko/NanoNet/
 
 /* Copyright AkashiNeko. All rights reserved.
@@ -26,9 +26,9 @@
 
 #pragma once
 #ifndef __NANONET__
-#define __NANONET__ 2.31
+#define __NANONET__ 2.3
 
-#if __cplusplus < 201103L
+#if __cplusplus < 201703L
 #error "Nanonet requires at least C++11"
 #endif
 
@@ -39,7 +39,7 @@
 // platform
 #ifdef __linux__ // Linux
 
-#define NANO_LINUX
+#define NANO_LINUX 1
 #define INVALID_SOCKET (-1)
 
 #include <arpa/inet.h>
@@ -48,7 +48,7 @@
 
 #elif _WIN32 // Windows
 
-#define NANO_WINDOWS
+#define NANO_WINDOWS 1
 
 #include <WinSock2.h>
 #include <ws2ipdef.h>
@@ -82,7 +82,6 @@ enum Domain {
 enum SockType {
     TCP_SOCK = SOCK_STREAM,
     UDP_SOCK = SOCK_DGRAM,
-    NONBLOCK = SOCK_NONBLOCK,
 }; // protocol type
 
 class NanoExcept : public std::exception {
@@ -150,6 +149,7 @@ void make_sockaddr4(sockaddr_in* sockaddr,
 // Gets the address and port bound on the file descriptor
 void get_local_address(sock_t socket, addr_t* addr, port_t* port) noexcept;
 
+// Set non-blocking
 bool set_blocking(sock_t socket, bool blocking) noexcept;
 
 // Classes
@@ -300,20 +300,28 @@ public:
     // blocking
     bool set_blocking(bool blocking);
 
-    // set socket option
-    template <class OptionType>
-    inline bool set_option(int level, int optname,
-            const OptionType& optval) const {
-        return ::setsockopt(socket_, level, optname,
-            (const void*)&optval, sizeof(optval)) == 0;
+    // socket option
+    template <class Ty>
+    inline bool set_option(int level, int optname, const Ty& optval) const {
+#ifdef NANO_LINUX
+        using const_arg_t = const void*;
+#elif NANO_WINDOWS
+        using const_arg_t = const char*;
+#endif
+        return 0 == ::setsockopt(socket_, level, optname,
+            (const_arg_t)&optval, sizeof(optval));
     }
 
-    template <class OptionType>
-    inline bool get_option(int level, int optname,
-            OptionType& optval) const {
+    template <class Ty>
+    inline bool get_option(int level, int optname, Ty& optval) const {
         socklen_t socklen = sizeof(optval);
+#ifdef NANO_LINUX
+        using arg_t = void*;
+#elif NANO_WINDOWS
+        using arg_t = char*;
+#endif
         return ::getsockopt(socket_, level, optname,
-            (void*)&optval, &socklen) == 0;
+            (arg_t)&optval, &socklen) == 0;
     }
 
 protected:

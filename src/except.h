@@ -25,38 +25,16 @@ public:
     }
 };
 
-// throw exceptions
-#if __cplusplus >= 201703L
-
-template <class ExceptType, class ...Args>
-inline void throw_except_(const Args&... args) {
+template <class ExceptType = WebStableExcept, class ...Args>
+inline void throw_except(const Args&... args) {
     std::string s;
     ((s += args), ...);
     throw ExceptType(std::move(s));
 }
 
-#else // 201103L <= __cplusplus < 201703L
-
-inline void append_string_(std::string&) {}
-
-template <class T, class ...Args>
-inline void append_string_(std::string& s, const T& arg, const Args&... args) {
-    s += arg;
-    append_string_(s, args...);
-}
-
-template <class ExceptType, class ...Args>
-inline void throw_except_(const Args&... args) {
-    std::string s;
-    append_string_(s, args...);
-    throw ExceptType(std::move(s));
-}
-
-#endif // __cplusplus
-
 #define assert_throw(condition, ...)          \
 (static_cast<bool>(condition) ? void(0) :     \
-throw_except_<WebStableExcept>(__VA_ARGS__)); \
+throw_except<WebStableExcept>(__VA_ARGS__));  \
 
 } // namespace webstab
 

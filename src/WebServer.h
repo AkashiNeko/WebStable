@@ -10,7 +10,8 @@
 
 // WebStable
 #include "Config.h"
-#include "EventQueue.h"
+#include "ThreadPool.h"
+#include "http/HttpAssembler.h"
 
 // iohub
 #include "iohub.h"
@@ -21,6 +22,7 @@ class WebServer final {
     int pipe_[2];
     nano::ServerSocket server_;
     iohub::Epoll epoll;
+    ThreadPool tp;
 
 public:
     WebServer(const Config& config);

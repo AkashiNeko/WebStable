@@ -1,39 +1,10 @@
 // WebServer.cpp
 
 #include "WebServer.h"
-#include "ThreadPool.hpp"
-
-using std::cout;
-using std::endl;
 
 namespace webstab {
 
-bool task(nano::sock_t sock) {
-    size_t read_length = 0;
-    int len = 0;
-    char buf[10240]{};
-    while (true) {
-        try {
-            len = nano::recv_msg(sock, buf, sizeof(buf) - 1);
-        } catch (...) {
-            len = 0;
-        }
-        if (len == 0) {
-            // close
-            return true;
-        }
-        if (len == -1) {
-            // TODO: receive done
-            cout << "receive done, length = " << read_length << endl;
-            break;
-        }
-        // TODO: append message
-        read_length += len;
-    }
-    return false;
-}
-
-WebServer::WebServer(const Config& config) {
+WebServer::WebServer(const Config& config) : tp(16) {
     // listen
     nano::AddrPort listen = config.get_listen();
     server_.reuse_addr(true);
@@ -48,6 +19,41 @@ WebServer::WebServer(const Config& config) {
     }
     std::cout << "Web server listening on "
         << listen.to_string() << std::endl;
+    tp.set_task([this](nano::sock_t sock) {
+        size_t read_length = 0;
+        int len = 0;
+        char buf[10240]{};
+        HttpRequest request;
+        HttpAssembler ha(request);
+        while (true) {
+            try {
+                len = nano::recv_msg(sock, buf, sizeof(buf) - 1);
+            } catch (...) {
+                len = 0;
+            }
+            if (len == 0) {
+                // close
+                printf("socket %d closed\n", sock);
+                nano::close_socket(sock);
+                return;
+            } else if (len == -1) {
+                // TODO: receive done
+                // cout << "receive done, length = " << read_length << endl;
+                std::cout << request.toString() << std::endl;
+                auto s = request.getText();
+                if (s.size() < 5) break;
+
+                HttpRespond respond;
+                respond.setText(std::to_string((s[2] & 0xF) + (s[4] & 0xF)));
+                std::string res = respond.toString();
+                nano::send_msg(sock, res.c_str(), res.size());
+                break;
+            }
+            // TODO: append message
+            ha.append(buf);
+        }
+        epoll.insert(sock, EPOLLIN | EPOLLET);
+    });
 }
 
 WebServer::~WebServer() {
@@ -55,13 +61,12 @@ WebServer::~WebServer() {
 }
 
 int WebServer::exec() {
-    std::vector<iohub::fd_event_t> fd_events;
     nano::sock_t serv = server_.get();
-    ThreadPool tp(16, task, epoll);
+    std::vector<iohub::fd_event_t> fd_events;
     while (true) {
         // main loop
         epoll.wait(fd_events);
-        for (auto [fd, event] : fd_events) {
+        for (const auto& [fd, event] : fd_events) {
             if (fd == serv) {
                 // new link
                 while (true) {
@@ -73,6 +78,7 @@ int WebServer::exec() {
                 }
             } else {
                 // link fd
+                epoll.erase(fd);
                 tp.push(fd);
             }
         }
