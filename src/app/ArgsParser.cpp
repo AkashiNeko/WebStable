@@ -12,8 +12,13 @@ const char* HelpText =
     "  -v,-V        : show version\n"
     "  -c filename  : start with configuration file\n";
 
+#define STRINGIFY(x) #x
+#define TOSTRING(x) STRINGIFY(x)
+
 const char* VersionText =
-    "WebStable Version: " APP_VERSION_ "\n";
+    "* WebStable  Version: " APP_VERSION_ "\n"
+    "* NanoNet    Version: " TOSTRING(__NANONET__) "\n"
+    "Github: https://github.com/AkashiNeko/WebStable\n";
 
 }
 

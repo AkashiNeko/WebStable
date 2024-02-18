@@ -1,77 +1,79 @@
 // WebServer.cpp
 
 #include "WebServer.h"
-#include <cassert>
+#include "ThreadPool.hpp"
+
+using std::cout;
+using std::endl;
 
 namespace webstab {
 
-WebServer::WebServer(const Config& config) : poller_(new iohub::Epoll) {
+bool task(nano::sock_t sock) {
+    size_t read_length = 0;
+    int len = 0;
+    char buf[10240]{};
+    while (true) {
+        try {
+            len = nano::recv_msg(sock, buf, sizeof(buf) - 1);
+        } catch (...) {
+            len = 0;
+        }
+        if (len == 0) {
+            // close
+            return true;
+        }
+        if (len == -1) {
+            // TODO: receive done
+            cout << "receive done, length = " << read_length << endl;
+            break;
+        }
+        // TODO: append message
+        read_length += len;
+    }
+    return false;
+}
+
+WebServer::WebServer(const Config& config) {
+    // listen
+    nano::AddrPort listen = config.get_listen();
+    server_.reuse_addr(true);
+    server_.set_blocking(false);
     try {
-        server_.reuse_addr(true);
-        server_.set_blocking(false);
-        nano::AddrPort listen = config.get_listen();
-        server_.bind(listen.get_addr(), listen.get_port());
-        poller_->insert(server_.get_sock(), EPOLLIN | EPOLLET);
+        server_.bind(listen.addr(), listen.port());
+        epoll.insert(server_.get(), EPOLLIN | EPOLLET);
         server_.listen();
-        std::cout << "Web server listening on "
-            << listen.to_string() << std::endl;
     } catch (const std::exception& e) {
         std::cerr << "Web server start failed: " << e.what() << std::endl;
         exit(-2);
     }
+    std::cout << "Web server listening on "
+        << listen.to_string() << std::endl;
+}
+
+WebServer::~WebServer() {
+    server_.close();
 }
 
 int WebServer::exec() {
     std::vector<iohub::fd_event_t> fd_events;
-    int server_fd = server_.get_sock();
+    nano::sock_t serv = server_.get();
+    ThreadPool tp(16, task, epoll);
     while (true) {
         // main loop
-        poller_->wait(fd_events);
-        char buf[1024000];
+        epoll.wait(fd_events);
         for (auto [fd, event] : fd_events) {
-            if (fd == server_fd) {
+            if (fd == serv) {
+                // new link
                 while (true) {
-                    try {
-                        nano::Socket new_sock = server_.accept();
-                        new_sock.set_blocking(false);
-                        int new_fd = new_sock.get_sock();
-                        poller_->insert(new_fd, EPOLLIN | EPOLLET);
-                        std::cout << "\raccept fd = " << new_fd;
-                        fflush(stdout);
-                        sock_map_[new_fd] = new_sock;
-                    } catch (const std::exception& e) {
-                        break;
-                    }
+                    auto sock = nano::accept_from(serv, nullptr, nullptr);
+                    if (sock == INVALID_SOCKET) break;
+                    nano::set_blocking(sock, false);
+                    epoll.insert(sock, EPOLLIN | EPOLLET);
+                    printf("accepted fd = %d, poller size = %zu\n", sock, epoll.size());
                 }
             } else {
                 // link fd
-                std::string msg;
-                int len = 0;
-                nano::Socket& socket = sock_map_[fd];
-                while (true) {
-                    try {
-                        len = socket.receive(buf, sizeof(buf));
-                        // len = recv(fd, buf, sizeof(buf) - 1, 0);
-                    } catch (const std::exception& e) {
-                        len = 0;
-                        std::cerr << "socket exception: " << e.what() << std::endl;
-                    }
-                    if (len == 0) {
-                        // client closed
-                        poller_->erase(fd);
-                        std::cout << "client closed: "
-                            << socket.get_remote().to_string()
-                            << ", fd = " << fd
-                            << ", poller size = " << poller_->size()
-                            << std::endl;
-                        socket.close();
-                        sock_map_.erase(fd);
-                        break;
-                    }
-                    if (len == -1) break; // read end
-                    printf("\rlength = %d        ", len);
-                    fflush(stdout);
-                }
+                tp.push(fd);
             }
         }
     }

@@ -26,7 +26,7 @@
 
 #include "EventQueue.h"
 
-namespace iohub {
+namespace webstab {
 
 EventQueue::EventQueue() : front_(-1) {}
 

@@ -5,6 +5,7 @@
 #define WEBSTABLE_ARGS_PARSER_H
 
 #include "ArgsParser.h"
+#include "nanonet.h"
 
 #include <vector>
 #include <string>

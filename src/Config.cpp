@@ -72,11 +72,11 @@ nano::AddrPort parse_addr_port_(const std::string& str) {
     nano::AddrPort result;
     size_t pos = str.find_last_of(':');
     if (pos == std::string::npos) {
-        result.set_addr(str);
-        result.set_port(80);
+        result.addr(nano::Addr(str));
+        result.port(80);
     } else {
-        result.set_addr(str.substr(0, pos));
-        result.set_port(str.substr(pos + 1));
+        result.addr(nano::Addr(str.substr(0, pos)));
+        result.port(nano::Port(str.substr(pos + 1)));
     }
     return result;
 }

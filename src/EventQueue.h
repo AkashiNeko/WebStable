@@ -30,7 +30,7 @@
 
 #include <vector>
 
-namespace iohub {
+namespace webstab {
 
 // pair {fd: int, event: int}
 using fd_event_t = std::pair<int, int>;
