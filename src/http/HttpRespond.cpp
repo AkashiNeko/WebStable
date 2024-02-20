@@ -5,16 +5,20 @@
 namespace webstab {
 
 
-HttpRespond::HttpRespond(const std::string& version, const std::string& statusCode, const std::string& statusMessage)
-    : version(version), statusCode(statusCode), statusMessage(statusMessage) {}
+HttpRespond::HttpRespond(const std::string& version,
+        const std::string& statusCode,
+        const std::string& statusMessage)
+    : version(version),
+    status_code(statusCode),
+    status_message(statusMessage) {}
 
 // to string
-std::string HttpRespond::toString() const {
+std::string HttpRespond::to_string() const {
 
-    if (version.empty() || statusCode.empty() || statusMessage.empty())
+    if (version.empty() || status_code.empty() || status_message.empty())
         return "";
 
-    std::string result = version + ' ' + statusCode + ' ' + statusMessage + "\r\n";
+    std::string result = version + ' ' + status_code + ' ' + status_message + "\r\n";
 
     for (const auto& e : headers)
         result += e.first + ": " + e.second + "\r\n";

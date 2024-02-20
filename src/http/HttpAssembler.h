@@ -17,28 +17,28 @@ class HttpAssembler {
     HttpRequest& httpmsg;
 
     // check
-    std::string bodyCache;
-    std::string headCache;
-    std::string chunkCache;
+    std::string body_cache_;
+    std::string head_cache_;
+    std::string chunk_cache_;
 
-    size_t bodyStart = std::string::npos;
-    size_t bodyStartCache = 0;
-    size_t headerContentLength = std::string::npos;
-    size_t chunkLast = 0;
-    size_t chunkPos = 0;
-    size_t chunkBase = 0;
+    size_t body_begin_pos_ = std::string::npos;
+    size_t body_begin_pos_cache_ = 0;
+    size_t header_content_length_ = std::string::npos;
+    size_t chunk_last_ = 0;
+    size_t chunk_pos_ = 0;
+    size_t chunk_base_ = 0;
 
-    bool chunkedTransferEncoding = false;
-    bool isOK = false;
-    bool headDone = false;
+    bool chunked_transfer_encoding_ = false;
+    bool is_ok_ = false;
+    bool head_done_ = false;
 
 private:
 
-    bool _fillHead(HttpRequest& request, const char* msg);
+    bool fill_head_(HttpRequest& request, const char* msg);
 
     // append chunks when 'Transfer-Encoding' is 'chunked'
-    bool _appendChunk(const char* msg);
-    bool _appendBody(const char* msg);
+    bool append_chunk_(const char* msg);
+    bool append_body_(const char* msg);
 
 public:
 

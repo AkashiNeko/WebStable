@@ -26,36 +26,36 @@ namespace webstab {
 class Url {
 
     // url string
-    std::string raw;
+    std::string raw_;
 
     // scheme
-    std::string scheme;
+    std::string scheme_;
     
     // userinfo
-    std::string user;
-    std::string password;
+    std::string user_;
+    std::string password_;
 
     // host
-    std::string host;
+    std::string host_;
 
     // path
-    std::string path = "/";
+    std::string path_ = "/";
 
     // query
-    std::string query;
+    std::string query_;
 
     // fragment
-    std::string fragment;
+    std::string fragment_;
 
     // port
-    nano::Port port = 0;
+    nano::Port port_ = 0;
 
 private:
 
-    void _parseUserInfo(std::string&& userInfo);
-    void _parseAuthority(std::string&& authority);
-    void _parseAuthorityAfter(std::string&& str);
-    void _parseUrl();
+    void parse_user_info_(std::string&& userInfo);
+    void parse_authority_(std::string&& authority);
+    void parse_authority_after_(std::string&& str);
+    void parse_url_();
 
 public:
 
@@ -71,96 +71,96 @@ public:
     void parse(std::string&& url);
     void parse(const std::string& url);
 
-    std::string getAuthorityAfter() const;
-    void setAuthorityAfter(const std::string& authority);
-    void setAuthorityAfter(std::string&& authority);
+    std::string authority_after() const;
+    void authority_after(const std::string& authority);
+    void authority_after(std::string&& authority);
 
-    inline std::string getScheme() const {
-        return this->scheme;
-    }
-
-    inline std::string getUser() const {
-        return this->user;
+    inline std::string scheme() const {
+        return this->scheme_;
     }
 
-    inline std::string getPassword() const {
-        return this->password;
+    inline std::string user() const {
+        return this->user_;
     }
 
-    inline std::string getHost() const {
-        return this->host;
+    inline std::string password() const {
+        return this->password_;
     }
 
-    inline nano::Port getPort() const {
-        return this->port;
+    inline std::string host() const {
+        return this->host_;
     }
 
-    inline std::string getPath() const {
-        return this->path;
+    inline nano::Port port() const {
+        return this->port_;
     }
 
-    inline std::string getQuery() const {
-        return this->query;
+    inline std::string path() const {
+        return this->path_;
     }
 
-    inline std::string getFragment() const {
-        return this->fragment;
+    inline std::string query() const {
+        return this->query_;
     }
 
-    inline void setScheme(const std::string& scheme) {
-        this->scheme = scheme;
-    }
-    inline void setScheme(std::string&& scheme) {
-        this->scheme = std::move(scheme);
+    inline std::string fragment() const {
+        return this->fragment_;
     }
 
-    inline void setUser(const std::string& user) {
-        this->user = user;
+    inline void scheme(const std::string& scheme) {
+        this->scheme_ = scheme;
     }
-    inline void setUser(std::string&& user) {
-        this->user = std::move(user);
-    }
-
-    inline void setPassword(const std::string& password) {
-        this->password = password;
-    }
-    inline void setPassword(std::string&& password) {
-        this->password = std::move(password);
+    inline void scheme(std::string&& scheme) {
+        this->scheme_ = std::move(scheme);
     }
 
-    inline void setHost(const std::string& host) {
-        this->host = host;
+    inline void user(const std::string& user) {
+        this->user_ = user;
     }
-    inline void setHost(std::string&& host) {
-        this->host = std::move(host);
-    }
-
-    inline void setPort(nano::Port port) {
-        this->port = port;
+    inline void user(std::string&& user) {
+        this->user_ = std::move(user);
     }
 
-    inline void setPath(const std::string& path) {
-        this->path = path;
+    inline void password(const std::string& password) {
+        this->password_ = password;
     }
-    inline void setPath(std::string&& path) {
-        this->path = std::move(path);
-    }
-
-    inline void setQuery(const std::string& query) {
-        this->query = query;
-    }
-    inline void setQuery(std::string&& query) {
-        this->query = std::move(query);
+    inline void password(std::string&& password) {
+        this->password_ = std::move(password);
     }
 
-    inline void setFragment(const std::string& fragment) {
-        this->fragment = fragment;
+    inline void host(const std::string& host) {
+        this->host_ = host;
     }
-    inline void setFragment(std::string&& fragment) {
-        this->fragment = std::move(fragment);
+    inline void host(std::string&& host) {
+        this->host_ = std::move(host);
     }
 
-    std::string toString() const;
+    inline void port(nano::Port port) {
+        this->port_ = port;
+    }
+
+    inline void path(const std::string& path) {
+        this->path_ = path;
+    }
+    inline void path(std::string&& path) {
+        this->path_ = std::move(path);
+    }
+
+    inline void query(const std::string& query) {
+        this->query_ = query;
+    }
+    inline void query(std::string&& query) {
+        this->query_ = std::move(query);
+    }
+
+    inline void fragment(const std::string& fragment) {
+        this->fragment_ = fragment;
+    }
+    inline void fragment(std::string&& fragment) {
+        this->fragment_ = std::move(fragment);
+    }
+
+    std::string to_string() const;
 
 }; // class Url
 

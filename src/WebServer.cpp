@@ -4,6 +4,8 @@
 
 namespace webstab {
 
+int g_cnt = 0;
+
 WebServer::WebServer(const Config& config) : tp(16) {
     // listen
     nano::AddrPort listen = config.get_listen();
@@ -33,21 +35,41 @@ WebServer::WebServer(const Config& config) : tp(16) {
             }
             if (len == 0) {
                 // close
-                printf("socket %d closed\n", sock);
+                // printf("socket %d closed\n", sock);
                 nano::close_socket(sock);
                 return;
             } else if (len == -1) {
                 // TODO: receive done
                 // cout << "receive done, length = " << read_length << endl;
-                std::cout << request.toString() << std::endl;
-                auto s = request.getText();
+                // std::cout << request.to_string() << std::endl;
+                const auto& s = request.path;
                 if (s.size() < 5) break;
 
                 HttpRespond respond;
-                respond.setText(std::to_string((s[2] & 0xF) + (s[4] & 0xF)));
-                std::string res = respond.toString();
+                size_t pos1 = s.find_first_of('?');
+                size_t pos2 = s.find_first_of('+');
+                int n1 = 0, n2 = 0;
+                try {
+                    n1 = std::stoi(s.substr(pos1 + 1, pos2 - pos1 - 1));
+                    n2 = std::stoi(s.substr(pos2 + 1));
+                } catch (const std::exception& e) {
+                    respond.body = e.what();
+                }
+                respond.body = "<h1>" + std::to_string(n1) + " + "
+                    + std::to_string(n2) + " = "
+                    + std::to_string(n1 + n2) + "</h1>\n";
+                respond.headers.insert({"Server", "WebStable"});
+                respond.headers.insert({"Content-Type", "text/html"});
+                respond.headers.insert({"Content-Length", std::to_string(respond.body.size())});
+
+                std::string res = respond.to_string();
+                std::cout << ++g_cnt << std::endl;
+                // std::cout << res << std::endl;
                 nano::send_msg(sock, res.c_str(), res.size());
-                break;
+                // printf("socket %d closed\n", sock);
+                nano::close_socket(sock);
+                return;
+                // break;
             }
             // TODO: append message
             ha.append(buf);
@@ -74,7 +96,7 @@ int WebServer::exec() {
                     if (sock == INVALID_SOCKET) break;
                     nano::set_blocking(sock, false);
                     epoll.insert(sock, EPOLLIN | EPOLLET);
-                    printf("accepted fd = %d, poller size = %zu\n", sock, epoll.size());
+                    // printf("accepted fd = %d, poller size = %zu\n", sock, epoll.size());
                 }
             } else {
                 // link fd

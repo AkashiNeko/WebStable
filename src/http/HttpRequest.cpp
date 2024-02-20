@@ -4,15 +4,19 @@
 
 namespace webstab {
 
-HttpRequest::HttpRequest() :path("/"), version("HTTP/1.0") {}
+HttpRequest::HttpRequest() :path("/"), version("HTTP/1.0") {
+    this->headers["Accept"] = "*/*";
+    this->headers["Host"] = host;
+    this->headers["User-Agent"] = "Nanonet";
+}
 
 HttpRequest::HttpRequest(const std::string& method,
     const Url& url, const std::string& version) :version(version) {
     // set request-URI
-    this->host = url.getHost();
-    this->path = url.getAuthorityAfter();
-    this->port = url.getPort();
-    this->useSSL = url.getScheme() == "https";
+    this->host = url.host();
+    this->path = url.authority_after();
+    this->port = url.port();
+    this->useSSL = url.scheme() == "https";
 
     // set request method
     for (auto& ch : method) {
@@ -21,12 +25,10 @@ HttpRequest::HttpRequest(const std::string& method,
     }
 
     // set request headers
-    this->headers["Accept"] = "*/*";
-    this->headers["Host"] = host;
-    this->headers["User-Agent"] = "Nanonet";
+
 }
 
-std::string HttpRequest::toString() const {
+std::string HttpRequest::to_string() const {
     std::string request = method + ' ' + path + ' ' + version + "\r\n";
 
     for (const auto& e : headers)
