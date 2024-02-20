@@ -7,7 +7,7 @@
 #include <string>
 #include <unordered_map>
 #include "nanonet.h"
-#include "../except.h"
+#include "except.h"
 
 namespace webstab {
 

@@ -3,11 +3,10 @@ project(WebStable)
 
 set(CXX_STANDARD_REQUIRED 17)
 
-file(GLOB SRC_LIST ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp)
-file(GLOB APP_SRC_LIST ${CMAKE_CURRENT_SOURCE_DIR}/src/app/*.cpp)
-file(GLOB HTTP_SRC_LIST ${CMAKE_CURRENT_SOURCE_DIR}/src/http/*.cpp)
+file(GLOB_RECURSE SRC_LIST ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src)
 
-add_executable(webstable ${SRC_LIST} ${APP_SRC_LIST} ${HTTP_SRC_LIST})
+add_executable(webstable ${SRC_LIST})
 target_link_libraries(webstable nanonet iohub)

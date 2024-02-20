@@ -35,7 +35,7 @@ public:
 
 public:
 
-    HttpRespond(const std::string& version = "HTTP/1.0",
+    HttpRespond(const std::string& version = "HTTP/1.1",
                 const std::string& statusCode = "200",
                 const std::string& statusMessage = "OK");
 

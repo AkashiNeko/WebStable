@@ -17,7 +17,7 @@
 #include <string>
 
 // NanoNet
-#include <nanonet.h>
+#include "nanonet.h"
 
 namespace webstab {
 
@@ -26,7 +26,8 @@ class Config {
     nano::AddrPort srv_listen_;
     std::string srv_poller_;
     std::unordered_map<std::string, std::string> static_;
-    std::map<unsigned, std::string> error_;
+    std::unordered_map<std::string, std::string> error_;
+    std::unordered_map<std::string, std::string> types_;
 
 public:
     Config();

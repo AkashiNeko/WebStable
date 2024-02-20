@@ -4,8 +4,6 @@
 
 namespace webstab {
 
-int g_cnt = 0;
-
 WebServer::WebServer(const Config& config) : tp(16) {
     // listen
     nano::AddrPort listen = config.get_listen();
@@ -63,7 +61,6 @@ WebServer::WebServer(const Config& config) : tp(16) {
                 respond.headers.insert({"Content-Length", std::to_string(respond.body.size())});
 
                 std::string res = respond.to_string();
-                std::cout << ++g_cnt << std::endl;
                 // std::cout << res << std::endl;
                 nano::send_msg(sock, res.c_str(), res.size());
                 // printf("socket %d closed\n", sock);

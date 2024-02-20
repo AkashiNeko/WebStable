@@ -1,6 +1,6 @@
-#include "ArgsParser.h"
-#include "../WebServer.h"
-#include "../Config.h"
+#include "app/ArgsParser.h"
+#include "app/Config.h"
+#include "core/WebServer.h"
 
 #include <iostream>
 
@@ -12,5 +12,4 @@ int main(int argc, char* argv[]) {
     webstab::Config config(args.conf_filepath());
     webstab::WebServer server(config);
     return server.exec();
-    return 0;
 }

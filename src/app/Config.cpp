@@ -81,35 +81,52 @@ nano::AddrPort parse_addr_port_(const std::string& str) {
     return result;
 }
 
-void split_digit_str_(const std::string& key,
-                    std::map<unsigned, std::string>& map,
+void split_keys_(const std::string& key,
+                    std::unordered_map<std::string, std::string>& map,
                     const std::string& value) {
     std::size_t start = 0;
     std::size_t end = key.find_first_of(' ');
 
     while (end != std::string::npos) {
         if (end != start)
-            map.insert({std::stoul(key.substr(start, end - start)), value});
+            map.emplace(key.substr(start, end - start), value);
         start = end + 1;
         end = key.find_first_of(' ', start);
     }
 
-    if (start != key.size()) map.insert({std::stoul(key.substr(start)), value});
+    if (start != key.size()) map.emplace(key.substr(start), value);
 }
 
-} // namespace
+using SectionType = enum { Global, Server, Static, Types, Error };
+
+SectionType parse_section_(const std::string& line, std::string_view fname, size_t line_num) {
+    if (line.back() != ']') {
+        std::cerr << fname << ':' << line_num
+            << ": The closing bracket cannot be found." << std::endl;
+        exit(3);
+    }
+    static std::unordered_map<std::string, SectionType> map = {
+        { "[server]", Server },
+        { "[static]", Static },
+        { "[error]", Error },
+        { "[types]", Types },
+    };
+    auto it = map.find(line);
+    if (it == map.end()) {
+        std::cerr << fname << ':' << line_num
+            << ": Invalid section name." << std::endl;
+        exit(4);
+    }
+    return it->second;
+}
+
+} // anonymous namespace
 
 namespace webstab {
 
-Config::Config()
-    : srv_listen_("0.0.0.0:80")
-    , srv_poller_("epoll")
-{
-}
+Config::Config() : srv_listen_("0.0.0.0:80") , srv_poller_("epoll") {}
 
-Config::Config(std::filesystem::path file)
-    : Config()
-{
+Config::Config(std::filesystem::path file) : Config() {
     is_valid_path_(file);
 
     // read the configuration file
@@ -125,7 +142,7 @@ Config::Config(std::filesystem::path file)
     size_t line_num = 1;
 
     // current section
-    enum { Global, Server, Static, Error } cur = Global;
+    SectionType cur = Global;
 
     // traverse each line of the file
     while (std::getline(conf, line)) {
@@ -134,23 +151,7 @@ Config::Config(std::filesystem::path file)
 
         if (line.front() == '[') {
             // section
-            if (line.back() != ']') {
-                std::cerr << file.c_str() << ':' << line_num
-                    << ": The closing bracket cannot be found." << std::endl;
-                exit(3);
-            }
-            if (line == "[server]") {
-                cur = Server;
-            } else if (line == "[static]") {
-                cur = Static;
-            } else if (line == "[error]") {
-                cur = Error;
-            } else {
-                std::cerr << file.c_str() << ':' << line_num
-                    << ": Invalid section name." << std::endl;
-                exit(4);
-            }
-
+            parse_section_(line, file.c_str(), line_num);
         } else {
             // key and value
             if (cur == Global) {
@@ -167,7 +168,7 @@ Config::Config(std::filesystem::path file)
                     << ": This line does not contain key-value" << std::endl;
                 exit(6);
             }
-            // get k-v
+            // get key-value
             std::string key = line.substr(0, pos), value = line.substr(pos + 1);
             rm_back_blank_(key);
             rm_front_blank_(value);
@@ -178,7 +179,8 @@ Config::Config(std::filesystem::path file)
             }
 
             // parse
-            if (cur == Server) {
+            switch (cur) {
+            case Server: // [server]
                 if (key == "listen") {
                     try {
                         this->srv_listen_ = parse_addr_port_(value);
@@ -192,16 +194,17 @@ Config::Config(std::filesystem::path file)
                         << ": Unknown config key: \"" << key << '\"' << std::endl;
                     exit(9);
                 }
-            } else if (cur == Static) {
+                break;
+            case Static: // [static]
                 this->static_.insert({key, value});
-            } else { // Error
-                try {
-                    split_digit_str_(key, this->error_, value);
-                } catch (...) {
-                    std::cerr << file.c_str() << ':' << line_num
-                        << ": Key is not a number." << std::endl;
-                    exit(10);
-                }
+                break;
+            case Error: // [error]
+                split_keys_(key, this->error_, value);
+                break;
+            case Types: // [type]
+                split_keys_(key, this->types_, value);
+                break;
+            default: break;
             }
         }
         ++line_num;
@@ -219,8 +222,8 @@ std::string Config::to_string() const {
     }
     if (!error_.empty()) {
         res += "\n[error]\n";
-        for (auto& [k, v] : error_)
-            res += '\t' + std::to_string(k) + " = " + v + '\n';
+        for (auto& [code, file] : error_)
+            res += '\t' + code + " = " + file + '\n';
     }
     return res;
 }
