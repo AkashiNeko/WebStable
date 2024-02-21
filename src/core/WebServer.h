@@ -21,7 +21,7 @@ namespace webstab {
 class WebServer final {
     int pipe_[2];
     nano::ServerSocket server_;
-    iohub::Epoll epoll;
+    std::unique_ptr<iohub::PollerBase> poller_;
     ThreadPool tp;
 
 public:

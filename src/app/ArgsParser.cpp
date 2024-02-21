@@ -18,15 +18,12 @@ const char* HelpText =
 const char* VersionText =
     "* WebStable  Version: " APP_VERSION_ "\n"
     "* NanoNet    Version: " TOSTRING(__NANONET__) "\n"
-    "Github: https://github.com/AkashiNeko/WebStable\n";
+    "GitHub: https://github.com/AkashiNeko/WebStable\n";
 
 }
 
 ArgsParser::ArgsParser(int argc, char** argv)
-    : opt_h_(false)
-    , opt_v_(false)
-    , opt_c_(false)
-{
+        : opt_h_(false), opt_v_(false), opt_c_(false) {
     for (int i = 1; i < argc; ++i)
         args.push_back(argv[i]);
 }

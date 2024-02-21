@@ -82,19 +82,19 @@ nano::AddrPort parse_addr_port_(const std::string& str) {
 }
 
 void split_keys_(const std::string& key,
-                    std::unordered_map<std::string, std::string>& map,
-                    const std::string& value) {
+        std::unordered_map<std::string, std::string>& map,
+        const std::string& value) {
     std::size_t start = 0;
     std::size_t end = key.find_first_of(' ');
 
     while (end != std::string::npos) {
         if (end != start)
-            map.emplace(key.substr(start, end - start), value);
+            map[key.substr(start, end - start)] = value;
         start = end + 1;
         end = key.find_first_of(' ', start);
     }
 
-    if (start != key.size()) map.emplace(key.substr(start), value);
+    if (start != key.size()) map[key.substr(start)] = value;
 }
 
 using SectionType = enum { Global, Server, Static, Types, Error };
@@ -124,7 +124,13 @@ SectionType parse_section_(const std::string& line, std::string_view fname, size
 
 namespace webstab {
 
-Config::Config() : srv_listen_("0.0.0.0:80") , srv_poller_("epoll") {}
+Config::Config() : server_({
+    { "listen", "0.0.0.0:80" },
+    { "threads_num", "16" },
+    { "keepalive_time", "30" },
+    { "poller", "epoll" },
+    { "index", "index.html" },
+    { "default_type", "application/octet-stream"} }) {}
 
 Config::Config(std::filesystem::path file) : Config() {
     is_valid_path_(file);
@@ -151,7 +157,7 @@ Config::Config(std::filesystem::path file) : Config() {
 
         if (line.front() == '[') {
             // section
-            parse_section_(line, file.c_str(), line_num);
+            cur = parse_section_(line, file.c_str(), line_num);
         } else {
             // key and value
             if (cur == Global) {
@@ -181,22 +187,10 @@ Config::Config(std::filesystem::path file) : Config() {
             // parse
             switch (cur) {
             case Server: // [server]
-                if (key == "listen") {
-                    try {
-                        this->srv_listen_ = parse_addr_port_(value);
-                    } catch (const std::exception& e) {
-                        std::cerr << file.c_str() << ':' << line_num
-                            << ": Parse listen address failed: " << e.what() << std::endl;
-                        exit(8);
-                    }
-                } else {
-                    std::cerr << file.c_str() << ':' << line_num
-                        << ": Unknown config key: \"" << key << '\"' << std::endl;
-                    exit(9);
-                }
+                this->server_[key] = value;
                 break;
             case Static: // [static]
-                this->static_.insert({key, value});
+                this->static_[key] = value;
                 break;
             case Error: // [error]
                 split_keys_(key, this->error_, value);
@@ -213,27 +207,51 @@ Config::Config(std::filesystem::path file) : Config() {
 }
 
 std::string Config::to_string() const {
-    std::string res =  "[server]\n"
-        "\tlisten = " + srv_listen_.to_string() + '\n';
-    if (!static_.empty()) {
-        res += "\n[static]\n";
-        for (auto& [k, v] : static_)
-            res += '\t' + k + " = " + v + '\n';
+    std::string res =  "[server]\n";
+    for (const auto& [key, value] : this->server_) {
+        res += '\t' + key + " = " + value + '\n';
     }
-    if (!error_.empty()) {
+    if (!this->static_.empty()) {
+        res += "\n[static]\n";
+        for (const auto& [path, local] : this->static_)
+            res += '\t' + path + " = " + local.c_str() + '\n';
+    }
+    if (!this->error_.empty()) {
         res += "\n[error]\n";
-        for (auto& [code, file] : error_)
+        for (const auto& [code, file] : this->error_)
             res += '\t' + code + " = " + file + '\n';
+    }
+    if (!this->types_.empty()) {
+        res += "\n[types]\n";
+        for (const auto& [name, type] : this->types_)
+            res += '\t' + name + " = " + type + '\n';
     }
     return res;
 }
 
 nano::AddrPort Config::get_listen() const {
-    return srv_listen_;
+    auto it = server_.find("listen");
+    if (it == server_.end())
+        return nano::AddrPort({nano::Addr(), nano::Port(80)});
+    return nano::AddrPort(it->second);
 }
 
 void Config::set_listen(const nano::AddrPort& addr_port) {
-    srv_listen_ = addr_port;
+    server_["listen"] = addr_port.to_string();
+}
+
+std::string Config::server(const std::string& name) const {
+    auto it = types_.find(name);
+    if (it != types_.end()) return "";
+    return it->second;
+}
+
+size_t Config::threads_num() const {
+    return std::stoul(server_.at("threads_num"));
+}
+
+std::string Config::poller() const {
+    return server_.at("poller");
 }
 
 } // namespace webstab

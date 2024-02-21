@@ -4,14 +4,38 @@
 
 namespace webstab {
 
-WebServer::WebServer(const Config& config) : tp(16) {
+namespace {
+
+int PollerEvent = 0;
+
+iohub::PollerBase* create_poller_(const std::string& poller_name) {
+    std::cout << "create poller " << poller_name << std::endl;
+    if (poller_name == "select") {
+        PollerEvent = iohub::IOHUB_IN;
+        return new iohub::Select;
+    } else if (poller_name == "poll") {
+        PollerEvent = POLLIN;
+        return new iohub::Poll;
+    } else if (poller_name == "epoll") {
+        PollerEvent = EPOLLIN | EPOLLET;
+        return new iohub::Epoll;
+    } else {
+        std::cerr << "unsupported poller: " << poller_name << std::endl;
+        exit(1);
+    }
+}
+
+} // anonymous namespace
+
+WebServer::WebServer(const Config& config)
+        : tp(config.threads_num()), poller_(create_poller_(config.poller())) {
     // listen
     nano::AddrPort listen = config.get_listen();
     server_.reuse_addr(true);
     server_.set_blocking(false);
     try {
         server_.bind(listen.addr(), listen.port());
-        epoll.insert(server_.get(), EPOLLIN | EPOLLET);
+        poller_->insert(server_.get(), PollerEvent);
         server_.listen();
     } catch (const std::exception& e) {
         std::cerr << "Web server start failed: " << e.what() << std::endl;
@@ -71,7 +95,7 @@ WebServer::WebServer(const Config& config) : tp(16) {
             // TODO: append message
             ha.append(buf);
         }
-        epoll.insert(sock, EPOLLIN | EPOLLET);
+        poller_->insert(sock, PollerEvent);
     });
 }
 
@@ -84,7 +108,7 @@ int WebServer::exec() {
     std::vector<iohub::fd_event_t> fd_events;
     while (true) {
         // main loop
-        epoll.wait(fd_events);
+        poller_->wait(fd_events);
         for (const auto& [fd, event] : fd_events) {
             if (fd == serv) {
                 // new link
@@ -92,12 +116,12 @@ int WebServer::exec() {
                     auto sock = nano::accept_from(serv, nullptr, nullptr);
                     if (sock == INVALID_SOCKET) break;
                     nano::set_blocking(sock, false);
-                    epoll.insert(sock, EPOLLIN | EPOLLET);
+                    poller_->insert(sock, PollerEvent);
                     // printf("accepted fd = %d, poller size = %zu\n", sock, epoll.size());
                 }
             } else {
                 // link fd
-                epoll.erase(fd);
+                poller_->erase(fd);
                 tp.push(fd);
             }
         }
