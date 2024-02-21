@@ -38,6 +38,10 @@ class Config {
 public:
     Config();
     Config(std::filesystem::path file);
+
+    Config(const Config&) = default;
+    Config(Config&&) = default;
+    
     std::string to_string() const;
 
     nano::AddrPort get_listen() const;
@@ -45,6 +49,9 @@ public:
     std::string server(const std::string& name) const;
     size_t threads_num() const;
     std::string poller() const;
+    std::string type(const std::string& extension) const;
+    std::string server_name() const;
+    std::filesystem::path static_path(std::string url_path) const;
 };
 
 } // namespace webstab

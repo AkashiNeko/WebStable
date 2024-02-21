@@ -7,7 +7,7 @@
 #include <iostream>
 #include <map>
 #include <string>
-
+#include <filesystem>
 #include "Url.h"
 
 namespace webstab {
@@ -21,14 +21,14 @@ public:
     std::string version;
 
     // request headers
-    std::map<const std::string, std::string> headers;
+    std::map<std::string, std::string> headers;
     std::string host;
 
     // request body
     std::string body;
 
     // https
-    bool useSSL = false;
+    bool use_ssl = false;
 
     // port
     nano::Port port;
@@ -38,13 +38,13 @@ public:
     HttpRequest();
 
     HttpRequest(const std::string& method,
-        const Url& url, const std::string& version = "HTTP/1.0");
-
-    inline void set_header(const std::string& key, const std::string& value) {
-        headers[key] = value;
-    }
+        const Url& url, const std::string& version);
 
     std::string to_string() const;
+
+    std::string lower_header(const std::string& key) const;
+
+    std::string relative_path() const;
 
 };  // class HttpRequest
 

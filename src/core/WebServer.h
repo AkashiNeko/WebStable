@@ -7,10 +7,12 @@
 // C++
 #include <iostream>
 #include <mutex>
+#include <memory>
 
 // WebStable
-#include "app/Config.h"
 #include "ThreadPool.h"
+#include "respond.h"
+#include "app/Config.h"
 #include "http/HttpAssembler.h"
 
 // iohub
@@ -19,7 +21,8 @@
 namespace webstab {
 
 class WebServer final {
-    int pipe_[2];
+    Config config_;
+    int pipefd_[2];
     nano::ServerSocket server_;
     std::unique_ptr<iohub::PollerBase> poller_;
     ThreadPool tp;

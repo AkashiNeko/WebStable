@@ -4,29 +4,13 @@
 
 namespace webstab {
 
-HttpRequest::HttpRequest() :path("/"), version("HTTP/1.0") {
-    this->headers["Accept"] = "*/*";
-    this->headers["Host"] = host;
-    this->headers["User-Agent"] = "Nanonet";
-}
+HttpRequest::HttpRequest() {}
 
 HttpRequest::HttpRequest(const std::string& method,
-    const Url& url, const std::string& version) :version(version) {
-    // set request-URI
-    this->host = url.host();
-    this->path = url.authority_after();
-    this->port = url.port();
-    this->useSSL = url.scheme() == "https";
-
-    // set request method
-    for (auto& ch : method) {
-        // method to upper
-        this->method.push_back(std::toupper(ch));
-    }
-
-    // set request headers
-
-}
+        const Url& url, const std::string& version)
+    : method(method), version(version), host(url.host()),
+    path(url.authority_after()), port(url.port()),
+    use_ssl(url.scheme() == "https") {}
 
 std::string HttpRequest::to_string() const {
     std::string request = method + ' ' + path + ' ' + version + "\r\n";
@@ -36,6 +20,19 @@ std::string HttpRequest::to_string() const {
 
     request += "\r\n" + body;
     return std::move(request);
+}
+
+std::string HttpRequest::lower_header(const std::string& key) const {
+    auto it = headers.find(key);
+    if (it == headers.end()) return "";
+    std::string result(it->second);
+    for (char& c : result)
+        if (c > 64 && c < 91) c |= 0x20;
+    return std::move(result);
+}
+
+std::string HttpRequest::relative_path() const {
+    return path.substr(1);
 }
 
 }  // namespace webstab

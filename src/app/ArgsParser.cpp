@@ -1,6 +1,8 @@
 // ArgsParser.cpp
 
 #include "ArgsParser.h"
+#include "version.h"
+
 namespace webstab {
 
 namespace {
@@ -12,12 +14,9 @@ const char* HelpText =
     "  -v,-V        : show version\n"
     "  -c filename  : start with configuration file\n";
 
-#define STRINGIFY(x) #x
-#define TOSTRING(x) STRINGIFY(x)
-
 const char* VersionText =
-    "* WebStable  Version: " APP_VERSION_ "\n"
-    "* NanoNet    Version: " TOSTRING(__NANONET__) "\n"
+    "* WebStable  Version: " TOSTRING(WEBSTABLE_VERSION) "\n"
+    "* NanoNet    Version: " TOSTRING(NANONET_VERSION) "\n"
     "GitHub: https://github.com/AkashiNeko/WebStable\n";
 
 }

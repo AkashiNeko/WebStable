@@ -9,7 +9,6 @@ namespace {
 int PollerEvent = 0;
 
 iohub::PollerBase* create_poller_(const std::string& poller_name) {
-    std::cout << "create poller " << poller_name << std::endl;
     if (poller_name == "select") {
         PollerEvent = iohub::IOHUB_IN;
         return new iohub::Select;
@@ -27,10 +26,15 @@ iohub::PollerBase* create_poller_(const std::string& poller_name) {
 
 } // anonymous namespace
 
-WebServer::WebServer(const Config& config)
-        : tp(config.threads_num()), poller_(create_poller_(config.poller())) {
+WebServer::WebServer(const Config& config) : config_(config), pipefd_{-1, -1},
+        tp(config_.threads_num()), poller_(create_poller_(config_.poller())) {
+    if (-1 == ::pipe(pipefd_)) {
+        std::cerr << "create pipe failed: " << std::strerror(errno) << std::endl;
+        exit(1);
+    }
+    poller_->insert(pipefd_[0], PollerEvent);
     // listen
-    nano::AddrPort listen = config.get_listen();
+    nano::AddrPort listen = config_.get_listen();
     server_.reuse_addr(true);
     server_.set_blocking(false);
     try {
@@ -52,55 +56,36 @@ WebServer::WebServer(const Config& config)
         while (true) {
             try {
                 len = nano::recv_msg(sock, buf, sizeof(buf) - 1);
+                printf("receive len = %d\n", len);
             } catch (...) {
                 len = 0;
             }
             if (len == 0) {
                 // close
-                // printf("socket %d closed\n", sock);
+                printf("socket %d closed\n", sock);
                 nano::close_socket(sock);
                 return;
             } else if (len == -1) {
                 // TODO: receive done
                 // cout << "receive done, length = " << read_length << endl;
                 // std::cout << request.to_string() << std::endl;
-                const auto& s = request.path;
-                if (s.size() < 5) break;
-
-                HttpRespond respond;
-                size_t pos1 = s.find_first_of('?');
-                size_t pos2 = s.find_first_of('+');
-                int n1 = 0, n2 = 0;
-                try {
-                    n1 = std::stoi(s.substr(pos1 + 1, pos2 - pos1 - 1));
-                    n2 = std::stoi(s.substr(pos2 + 1));
-                } catch (const std::exception& e) {
-                    respond.body = e.what();
+                if (reply(sock, request, config_)) {
+                    printf("keep-alive, fd = %d\n", sock);
+                    write(pipefd_[1], &sock, sizeof(sock));
                 }
-                respond.body = "<h1>" + std::to_string(n1) + " + "
-                    + std::to_string(n2) + " = "
-                    + std::to_string(n1 + n2) + "</h1>\n";
-                respond.headers.insert({"Server", "WebStable"});
-                respond.headers.insert({"Content-Type", "text/html"});
-                respond.headers.insert({"Content-Length", std::to_string(respond.body.size())});
-
-                std::string res = respond.to_string();
-                // std::cout << res << std::endl;
-                nano::send_msg(sock, res.c_str(), res.size());
-                // printf("socket %d closed\n", sock);
-                nano::close_socket(sock);
-                return;
-                // break;
+                break;
             }
             // TODO: append message
             ha.append(buf);
         }
-        poller_->insert(sock, PollerEvent);
     });
 }
 
 WebServer::~WebServer() {
     server_.close();
+    poller_->close();
+    tp.shutdown();
+    std::cout << "webserver closed" << std::endl;
 }
 
 int WebServer::exec() {
@@ -109,7 +94,7 @@ int WebServer::exec() {
     while (true) {
         // main loop
         poller_->wait(fd_events);
-        for (const auto& [fd, event] : fd_events) {
+        for (const auto& [fd, _] : fd_events) {
             if (fd == serv) {
                 // new link
                 while (true) {
@@ -117,9 +102,15 @@ int WebServer::exec() {
                     if (sock == INVALID_SOCKET) break;
                     nano::set_blocking(sock, false);
                     poller_->insert(sock, PollerEvent);
-                    // printf("accepted fd = %d, poller size = %zu\n", sock, epoll.size());
+                    printf("accepted fd = %d\n", sock);
                 }
+            } else if (fd == pipefd_[0]) {
+                // event
+                nano::sock_t add_sock = INVALID_SOCKET;
+                ::read(fd, &add_sock, sizeof(add_sock));
+                poller_->insert(add_sock, PollerEvent);
             } else {
+                printf("linkfd %d\n", fd);
                 // link fd
                 poller_->erase(fd);
                 tp.push(fd);

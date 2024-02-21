@@ -15,6 +15,22 @@ size_t hex_str_to_dec_(const std::string& hexStr) {
     }
 }
 
+
+std::string capitalize_first_letter_(std::string&& str) {
+    bool upper = true;
+    for (char& c : str) {
+        if (c == '-') {
+            upper = true;
+        } else if (upper) {
+            c &= ~32;
+            upper = false;
+        } else {
+            c |= 32;
+        }
+    }
+    return str;
+}
+
 } // anonymous namespace
 
 bool HttpAssembler::fill_head_(HttpRequest& request, const char* msg) {
@@ -65,7 +81,8 @@ bool HttpAssembler::fill_head_(HttpRequest& request, const char* msg) {
             size_t colon = head_cache_.find(": ", beginLine);
             if (colon > endLine) continue;
             request.headers.insert({
-                head_cache_.substr(beginLine, colon - beginLine),
+                capitalize_first_letter_(
+                    head_cache_.substr(beginLine, colon - beginLine)),
                 head_cache_.substr(colon + 2, endLine - colon - 2)
             });
             pos = endLine + 2;

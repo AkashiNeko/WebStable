@@ -11,8 +11,6 @@
 #include <string>
 #include <iostream>
 
-#define APP_VERSION_ "1.0"
-
 namespace webstab {
 
 class ArgsParser {

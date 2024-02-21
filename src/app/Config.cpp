@@ -130,7 +130,8 @@ Config::Config() : server_({
     { "keepalive_time", "30" },
     { "poller", "epoll" },
     { "index", "index.html" },
-    { "default_type", "application/octet-stream"} }) {}
+    { "default_type", "application/octet-stream"},
+    { "server_name", "WebStable" } }) {}
 
 Config::Config(std::filesystem::path file) : Config() {
     is_valid_path_(file);
@@ -204,6 +205,10 @@ Config::Config(std::filesystem::path file) : Config() {
         ++line_num;
     }
     conf.close();
+    if (this->static_path("root").empty()) {
+        std::cerr << "static path: root is empty" << std::endl;
+        exit(1);
+    }
 }
 
 std::string Config::to_string() const {
@@ -241,8 +246,8 @@ void Config::set_listen(const nano::AddrPort& addr_port) {
 }
 
 std::string Config::server(const std::string& name) const {
-    auto it = types_.find(name);
-    if (it != types_.end()) return "";
+    auto it = server_.find(name);
+    if (it == server_.end()) return "";
     return it->second;
 }
 
@@ -252,6 +257,29 @@ size_t Config::threads_num() const {
 
 std::string Config::poller() const {
     return server_.at("poller");
+}
+
+std::string Config::type(const std::string& extension) const {
+    auto it = types_.find(extension);
+    if (it == types_.end()) {
+        auto default_type = server_.find("default_type");
+        if (default_type != server_.end()) return default_type->second;
+        return "application/octet-stream";
+    }
+    return it->second;
+}
+
+std::string Config::server_name() const {
+    auto it = server_.find("server_name");
+    if (it == types_.end())
+        return "WebStable";
+    return it->second;
+}
+
+std::filesystem::path Config::static_path(std::string url_path) const {
+    auto it = static_.find(url_path);
+    if (it == static_.end()) return std::filesystem::path();
+    return it->second;
 }
 
 } // namespace webstab
