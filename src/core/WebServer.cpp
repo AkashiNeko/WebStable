@@ -56,7 +56,6 @@ WebServer::WebServer(const Config& config) : config_(config), pipefd_{-1, -1},
         while (true) {
             try {
                 len = nano::recv_msg(sock, buf, sizeof(buf) - 1);
-                printf("receive len = %d\n", len);
             } catch (...) {
                 len = 0;
             }
@@ -69,9 +68,12 @@ WebServer::WebServer(const Config& config) : config_(config), pipefd_{-1, -1},
                 // TODO: receive done
                 // cout << "receive done, length = " << read_length << endl;
                 // std::cout << request.to_string() << std::endl;
-                if (reply(sock, request, config_)) {
+                if (Responser(config_, request, sock).reply()) {
                     printf("keep-alive, fd = %d\n", sock);
                     write(pipefd_[1], &sock, sizeof(sock));
+                } else {
+                    nano::close_socket(sock);
+                    printf("connection closed, fd = %d\n", sock);
                 }
                 break;
             }
@@ -102,7 +104,7 @@ int WebServer::exec() {
                     if (sock == INVALID_SOCKET) break;
                     nano::set_blocking(sock, false);
                     poller_->insert(sock, PollerEvent);
-                    printf("accepted fd = %d\n", sock);
+                    printf("\033[32maccepted fd = %d\033[0m\n", sock);
                 }
             } else if (fd == pipefd_[0]) {
                 // event
@@ -110,7 +112,6 @@ int WebServer::exec() {
                 ::read(fd, &add_sock, sizeof(add_sock));
                 poller_->insert(add_sock, PollerEvent);
             } else {
-                printf("linkfd %d\n", fd);
                 // link fd
                 poller_->erase(fd);
                 tp.push(fd);

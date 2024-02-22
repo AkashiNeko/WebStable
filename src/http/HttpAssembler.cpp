@@ -67,6 +67,7 @@ bool HttpAssembler::fill_head_(HttpRequest& request, const char* msg) {
         // get PATH: /...
         size_t pathEnd = head_cache_.find(' ', methodEnd + 1);
         request.path = head_cache_.substr(methodEnd + 1, pathEnd - methodEnd - 1);
+        
 
         // get VERSION: HTTP/1.0, HTTP/1.1...
         request.version = head_cache_.substr(pathEnd + 1, pos - pathEnd - 1);
@@ -136,12 +137,12 @@ bool HttpAssembler::append_chunk_(const char* msg) {
         } else {
             size_t append_length = length - chunk_base_;
             if (append_length <= chunk_last_) {
-                httpmsg.body += chunk_cache_.substr(chunk_base_, append_length);
+                httpmsg_.body += chunk_cache_.substr(chunk_base_, append_length);
                 chunk_last_ -= append_length;
                 chunk_base_ = chunk_pos_ = length;
                 return false;
             } else {
-                httpmsg.body += chunk_cache_.substr(chunk_base_, chunk_last_);
+                httpmsg_.body += chunk_cache_.substr(chunk_base_, chunk_last_);
                 chunk_base_ += chunk_last_ + 2;
                 chunk_last_ = 0;
             }
@@ -161,12 +162,12 @@ bool HttpAssembler::append_body_(const char* msg) {
     if (chunked_transfer_encoding_)
         return append_chunk_(msg);
     // append to body
-    httpmsg.body += msg;
+    httpmsg_.body += msg;
     // when 'Content-Length' is set
     if (header_content_length_ != std::string::npos) {
-        if (httpmsg.body.size() >= header_content_length_) {
+        if (httpmsg_.body.size() >= header_content_length_) {
             // receive done. truncate
-            httpmsg.body.resize(header_content_length_);
+            httpmsg_.body.resize(header_content_length_);
             return is_ok_ = true;
         } else {
             // continue
@@ -176,9 +177,9 @@ bool HttpAssembler::append_body_(const char* msg) {
     return false;
 }
 
+// public
 
-HttpAssembler::HttpAssembler(HttpRequest& httpmsg) :httpmsg(httpmsg) {}
-
+HttpAssembler::HttpAssembler(HttpRequest& httpmsg) :httpmsg_(httpmsg) {}
 
 bool HttpAssembler::append(const char* msg) {
     if (is_ok_)
@@ -187,7 +188,7 @@ bool HttpAssembler::append(const char* msg) {
     if (head_done_) {
         return append_body_(msg);
     } else {
-        return fill_head_(httpmsg, msg);
+        return fill_head_(httpmsg_, msg);
     }
 }
 

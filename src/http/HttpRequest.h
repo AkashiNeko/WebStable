@@ -46,6 +46,8 @@ public:
 
     std::string relative_path() const;
 
+    bool keep_alive() const;
+
 };  // class HttpRequest
 
 }  // namespace webstab

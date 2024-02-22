@@ -32,7 +32,15 @@ std::string HttpRequest::lower_header(const std::string& key) const {
 }
 
 std::string HttpRequest::relative_path() const {
+    if (path.size() < 2) return "";
     return path.substr(1);
+}
+
+bool HttpRequest::keep_alive() const {
+    std::string&& connection = lower_header("Connection");
+    if (connection == "keep-alive") return true;
+    else if (connection == "close") return false;
+    return version >= "HTTP/1.1";
 }
 
 }  // namespace webstab

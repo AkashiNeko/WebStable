@@ -1,21 +1,13 @@
-#include "respond.h"
+#include "Responser.h"
 #include "app/version.h"
 
 namespace webstab {
 
-namespace {
-
-bool is_keep_alive_(std::string_view connection, std::string_view version) {
-    if (connection == "keep-alive") return true;
-    else if (connection == "close") return false;
-    return version >= "HTTP/1.1";
-}
-
-void send_404_page_(nano::sock_t socket, const Config& cfg) {
+void Responser::send_404_page_() {
     HttpRespond respond;
     respond.status_code = "404";
     respond.status_message = "Not Found";
-    respond.headers["Server"] = cfg.server_name();
+    respond.headers["Server"] = cfg_.server_name();
     respond.headers["Content-Type"] = "text/html";
     respond.body =
         "<html>"
@@ -30,18 +22,17 @@ void send_404_page_(nano::sock_t socket, const Config& cfg) {
         "</html>\n";
     respond.headers["Content-Length"] = std::to_string(respond.body.size());
     std::string str = respond.to_string();
-    nano::send_msg(socket, str.c_str(), str.size());
+    nano::send_msg(sock_, str.c_str(), str.size());
 }
 
-void send_file_(nano::sock_t socket, const std::string& version,
-        const std::filesystem::path& path, const Config& cfg) {
+void Responser::send_file_(const std::filesystem::path& path) {
     std::string extension = path.extension().string();
     if (!extension.empty() && extension.front() == '.')
         extension = extension.substr(1);
-    std::string type = cfg.type(extension);
+    std::string type = cfg_.type(extension);
     HttpRespond respond;
-    respond.version = version;
-    respond.headers["Server"] = cfg.server_name();
+    respond.version = request_.version;
+    respond.headers["Server"] = cfg_.server_name();
     respond.headers["Content-Type"] = type;
     // TODO: read file
     std::ifstream file(path, std::ios::in | std::ios_base::binary);
@@ -56,31 +47,29 @@ void send_file_(nano::sock_t socket, const std::string& version,
     respond.headers["Content-Length"] = std::to_string(respond.body.size());
 
     std::string str = respond.to_string();
-    nano::send_msg(socket, str.c_str(), str.size());
-    // std::ifstream(path, std::ios::binary);
+    nano::send_msg(sock_, str.c_str(), str.size());
+
 }
 
-} // anonymous namespace
+Responser::Responser(const Config& cfg,
+        const HttpRequest& request, const nano::sock_t& sock)
+    : cfg_(cfg), request_(request), sock_(sock) {}
 
-bool reply(nano::sock_t sock, const HttpRequest& request, const Config& cfg) {
-    auto path = cfg.static_path("root").append(request.relative_path());
+bool Responser::reply() {
+    std::cout << "\033[36m" << request_.method << ' '
+        << request_.path << ' ' << request_.version << "\033[0m" << std::endl;
+    auto path = cfg_.static_path("root").append(request_.relative_path());
     if (std::filesystem::is_directory(path)) {
-        path.append(cfg.server("index"));
+        path.append(cfg_.server("index"));
     }
-    std::cout << path.c_str() << std::endl;
+    std::cout << "local: \033[33m" << path.c_str() << "\033[0m" << std::endl;
     if (!std::filesystem::exists(path)) {
-        send_404_page_(sock, cfg);
+        send_404_page_();
     } else {
-        send_file_(sock, request.version, path, cfg);
+        send_file_(path);
     }
-    if (!is_keep_alive_(request.lower_header("Connection"), request.version)) {
-        nano::close_socket(sock);
-        printf("connection closed, fd = %d\n", sock);
-        return false;
-    }
-    // nano::close_socket(sock);
-    // printf("socket %d closed\n", sock);
-    return true;
+    return false;
+    return request_.keep_alive();
 }
 
 } // namespace webstab

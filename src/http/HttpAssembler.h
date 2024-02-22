@@ -14,7 +14,7 @@ namespace webstab {
 
 class HttpAssembler {
 
-    HttpRequest& httpmsg;
+    HttpRequest& httpmsg_;
 
     // check
     std::string body_cache_;
