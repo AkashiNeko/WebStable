@@ -61,7 +61,7 @@ WebServer::WebServer(const Config& config) : config_(config), pipefd_{-1, -1},
             }
             if (len == 0) {
                 // close
-                printf("socket %d closed\n", sock);
+                // printf("socket %d closed\n", sock);
                 nano::close_socket(sock);
                 return;
             } else if (len == -1) {
@@ -69,11 +69,11 @@ WebServer::WebServer(const Config& config) : config_(config), pipefd_{-1, -1},
                 // cout << "receive done, length = " << read_length << endl;
                 // std::cout << request.to_string() << std::endl;
                 if (Responser(config_, request, sock).reply()) {
-                    printf("keep-alive, fd = %d\n", sock);
+                    // printf("keep-alive, fd = %d\n", sock);
                     write(pipefd_[1], &sock, sizeof(sock));
                 } else {
                     nano::close_socket(sock);
-                    printf("connection closed, fd = %d\n", sock);
+                    // printf("connection closed, fd = %d\n", sock);
                 }
                 break;
             }
@@ -104,7 +104,7 @@ int WebServer::exec() {
                     if (sock == INVALID_SOCKET) break;
                     nano::set_blocking(sock, false);
                     poller_->insert(sock, PollerEvent);
-                    printf("\033[32maccepted fd = %d\033[0m\n", sock);
+                    // printf("\033[32maccepted fd = %d\033[0m\n", sock);
                 }
             } else if (fd == pipefd_[0]) {
                 // event

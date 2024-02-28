@@ -32,26 +32,24 @@ long int read_file(const std::string& path, std::string& content) {
 
 } // anonymous namespace
 
-/*
-    get_file(...) {
-        读锁.lock();
-        if (缓存中有key && 缓存中的内容是最新的) {
-            互斥锁.lock();
-            * 调整LRU缓存（链表和哈希表）
-            互斥锁.unlock();
-            * 拷贝缓存内容（读）
-            读锁.unlock();
-        } else {
-            读锁.unlock();
-            写锁.lock();
-            * 读文件，存入缓存
-            互斥锁.lock();
-            * 调整LRU缓存（链表和哈希表）
-            互斥锁.unlock();
-            写锁.unlock();
-        }
-    }
-*/
+// get_file(...) {
+//     rwlock.lock(r);
+//     if (cache hit && cache is latest) {
+//         mutex.lock();
+//         * update LRU list and hashmap
+//         mutex.unlock();
+//         * read cache
+//         rwlock.unlock(r);
+//     } else {
+//         rwlock.unlock(r);
+//         rwlock.lock(w);
+//         * read file, update cache
+//         mutex.lock();
+//         * update LRU list and hashmap
+//         mutex.unlock();
+//         rwlock.unlock(w);
+//     }
+// }
 
 bool FileCache::get_file(const std::string& path, std::string& result) noexcept {
     rwlock_.lock_shared(); // rwlock lock read
