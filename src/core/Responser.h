@@ -16,9 +16,9 @@ class Responser {
     const nano::sock_t& sock_;
     FileCache cache_;
 
-    void send_default_404_page_() noexcept;
-    void send_respond_(const std::filesystem::path& path,
-        const std::string& body) noexcept;
+    bool send_default_404_page_();
+    bool send_respond_(const std::filesystem::path& path,
+        const std::string& body);
 
 public:
     Responser(const Config& cfg,

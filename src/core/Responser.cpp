@@ -21,7 +21,7 @@ constexpr size_t DEFAULT_404_PAGE_LENGTH = sizeof(DEFAULT_404_PAGE) - 1;
 
 } // anonymous namespace
 
-void Responser::send_default_404_page_() noexcept {
+bool Responser::send_default_404_page_() {
     HttpRespond respond;
     respond.status_code = "404";
     respond.status_message = "Not Found";
@@ -29,12 +29,17 @@ void Responser::send_default_404_page_() noexcept {
     respond.headers["Content-Type"] = "text/html";
     respond.headers["Content-Length"] = std::to_string(DEFAULT_404_PAGE_LENGTH);
     std::string str = respond.to_string();
-    nano::send_msg(sock_, str.c_str(), str.size());
-    nano::send_msg(sock_, DEFAULT_404_PAGE, DEFAULT_404_PAGE_LENGTH);
+    try {
+        nano::send_msg(sock_, str.c_str(), str.size(), MSG_NOSIGNAL);
+        nano::send_msg(sock_, DEFAULT_404_PAGE, DEFAULT_404_PAGE_LENGTH, MSG_NOSIGNAL);
+    } catch (const nano::NanoExcept& e) {
+        return false;
+    }
+    return true;
 }
 
-void Responser::send_respond_(const std::filesystem::path& path,
-        const std::string& body) noexcept {
+bool Responser::send_respond_(const std::filesystem::path& path,
+        const std::string& body) {
     std::string extension = path.extension().string();
     if (!extension.empty() && extension.front() == '.')
         extension = extension.substr(1);
@@ -45,8 +50,13 @@ void Responser::send_respond_(const std::filesystem::path& path,
     respond.headers["Content-Type"] = type;
     respond.headers["Content-Length"] = std::to_string(body.size());
     std::string str = respond.to_string();
-    nano::send_msg(sock_, str.c_str(), str.size());
-    nano::send_msg(sock_, body.c_str(), body.size());
+    try {
+        nano::send_msg(sock_, str.c_str(), str.size(), MSG_NOSIGNAL);
+        nano::send_msg(sock_, body.c_str(), body.size(), MSG_NOSIGNAL);
+    } catch (const nano::NanoExcept& e) {
+        return false;
+    }
+    return true;
 }
 
 Responser::Responser(const Config& cfg,
@@ -61,13 +71,11 @@ bool Responser::reply() {
         path.append(cfg_.server("index"));
     std::string file_content;
     // std::cout << "local: \033[33m" << path.c_str() << "\033[0m" << std::endl;
-    if (!cache_.get_file(path.string(), file_content)) {
-        send_default_404_page_();
-    } else {
-        send_respond_(path, file_content);
-    }
+    bool send_success = cache_.get_file(path.string(), file_content)
+        ? send_respond_(path, file_content) // get file success
+        : send_default_404_page_();         // get file failed
     return false;
-    // return request_.keep_alive();
+    // return !remote_closed && request_.keep_alive();
 }
 
 } // namespace webstab
