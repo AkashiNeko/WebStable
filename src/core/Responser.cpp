@@ -74,8 +74,7 @@ bool Responser::reply() {
     bool send_success = cache_.get_file(path.string(), file_content)
         ? send_respond_(path, file_content) // get file success
         : send_default_404_page_();         // get file failed
-    return false;
-    // return !remote_closed && request_.keep_alive();
+    return send_success && request_.keep_alive();
 }
 
 } // namespace webstab

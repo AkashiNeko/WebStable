@@ -52,6 +52,7 @@ public:
     std::string type(const std::string& extension) const;
     std::string server_name() const;
     std::filesystem::path static_path(std::string url_path) const;
+    size_t keepalive_timeout() const;
 };
 
 } // namespace webstab

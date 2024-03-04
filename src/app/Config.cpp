@@ -127,7 +127,7 @@ namespace webstab {
 Config::Config() : server_({
     { "listen", "0.0.0.0:80" },
     { "threads_num", "16" },
-    { "keepalive_time", "30" },
+    { "keepalive", "30" },
     { "poller", "epoll" },
     { "index", "index.html" },
     { "default_type", "application/octet-stream"},
@@ -280,6 +280,13 @@ std::filesystem::path Config::static_path(std::string url_path) const {
     auto it = static_.find(url_path);
     if (it == static_.end()) return std::filesystem::path();
     return it->second;
+}
+
+size_t Config::keepalive_timeout() const {
+    auto it = server_.find("keepalive");
+    if (it == types_.end())
+        return 30;
+    return std::stoul(it->second);
 }
 
 } // namespace webstab

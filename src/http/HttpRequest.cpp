@@ -19,7 +19,7 @@ std::string HttpRequest::to_string() const {
         request += e.first + ": " + e.second + "\r\n";
 
     request += "\r\n" + body;
-    return std::move(request);
+    return request;
 }
 
 std::string HttpRequest::lower_header(const std::string& key) const {
@@ -28,7 +28,7 @@ std::string HttpRequest::lower_header(const std::string& key) const {
     std::string result(it->second);
     for (char& c : result)
         if (c > 64 && c < 91) c |= 0x20;
-    return std::move(result);
+    return result;
 }
 
 std::string HttpRequest::relative_path() const {

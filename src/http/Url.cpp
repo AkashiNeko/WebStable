@@ -181,7 +181,7 @@ void Url::parse_url_() {
     // get authority and what follows
     pos += 3;
     size_t authorityEnd = std::string::npos;
-    for (int i = pos; i < raw_.size(); ++i) {
+    for (size_t i = pos; i < raw_.size(); ++i) {
         if (raw_[i] == '/' || raw_[i] == '?' || raw_[i] == '#') {
             authorityEnd = i; break;
         }

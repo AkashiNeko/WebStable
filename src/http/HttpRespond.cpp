@@ -24,7 +24,7 @@ std::string HttpRespond::to_string() const {
         result += e.first + ": " + e.second + "\r\n";
 
     result += "\r\n" + body;
-    return std::move(result);
+    return result;
 }
 
 } // namespace webstab
