@@ -1,6 +1,6 @@
-// File:     src/main.cpp
+// File:     src/thread/ThreadPool.h
 // Author:   AkashiNeko
-// Project:  WebStable - Version 1.0
+// Project:  WebStable
 // Github:   https://github.com/AkashiNeko/WebStable/
 
 /* Copyright (c) 2024 AkashiNeko
@@ -24,14 +24,55 @@
  * SOFTWARE.
  */
 
-#include "app/ArgsParser.h"
-#include "app/Config.h"
-#include "core/WebServer.h"
+#pragma once
+#ifndef WEBSTABLE_THREAD_THREADPOOL_H
+#define WEBSTABLE_THREAD_THREADPOOL_H
 
-int main(int argc, char* argv[]) {
-    webstab::ArgsParser args(argc, argv);
-    args.parse();
-    webstab::Config config(args.conf_filepath());
-    webstab::WebServer server(config);
-    return server.exec();
-}
+// C++
+#include <queue>
+#include <vector>
+#include <thread>
+#include <mutex>
+#include <condition_variable>
+#include <functional>
+
+// nanonet
+#include "nanonet.h"
+
+// iohub
+#include "iohub.h"
+
+namespace webstab {
+
+class ThreadPool final {
+public:
+    // type
+    using task_t = std::function<void(nano::sock_t)>;
+
+private:
+    task_t task_;
+    std::queue<nano::sock_t> task_queue_;
+    std::vector<std::thread> threads_;
+    std::mutex mutex_;
+    std::condition_variable cond_;
+    bool running_;
+
+    friend void thread_routine(ThreadPool* tp);
+
+public:
+
+    explicit ThreadPool(size_t thread_num = 8);
+    ~ThreadPool();
+
+    void set_task(task_t&& task);
+    void shutdown();
+    bool is_running();
+    void push(nano::sock_t sock);
+
+}; // class ThreadPool
+
+void thread_routine(ThreadPool* tp);
+
+} // namespace webstab
+
+#endif // WEBSTABLE_THREAD_THREADPOOL_H

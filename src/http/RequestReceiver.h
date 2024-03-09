@@ -1,6 +1,6 @@
-// File:     src/main.cpp
+// File:     src/http/RequestReceiver.h
 // Author:   AkashiNeko
-// Project:  WebStable - Version 1.0
+// Project:  WebStable
 // Github:   https://github.com/AkashiNeko/WebStable/
 
 /* Copyright (c) 2024 AkashiNeko
@@ -24,14 +24,53 @@
  * SOFTWARE.
  */
 
-#include "app/ArgsParser.h"
-#include "app/Config.h"
-#include "core/WebServer.h"
+#pragma once
+#ifndef WEBSTABLE_HTTP_REQUESTRECEIVER_H
+#define WEBSTABLE_HTTP_REQUESTRECEIVER_H
 
-int main(int argc, char* argv[]) {
-    webstab::ArgsParser args(argc, argv);
-    args.parse();
-    webstab::Config config(args.conf_filepath());
-    webstab::WebServer server(config);
-    return server.exec();
-}
+// C++
+#include <string>
+
+// WebStable
+#include "http/HttpRequest.h"
+
+namespace webstab {
+
+class RequestReceiver {
+
+    HttpRequest& httpmsg_;
+
+    // check
+    std::string body_cache_;
+    std::string head_cache_;
+    std::string chunk_cache_;
+
+    size_t body_begin_pos_ = std::string::npos;
+    size_t body_begin_pos_cache_ = 0;
+    size_t header_content_length_ = std::string::npos;
+    size_t chunk_last_ = 0;
+    size_t chunk_pos_ = 0;
+    size_t chunk_base_ = 0;
+
+    bool chunked_transfer_encoding_ = false;
+    bool is_ok_ = false;
+    bool head_done_ = false;
+
+private:
+
+    bool fill_head_(HttpRequest& request, const char* msg);
+
+    // append chunks when 'Transfer-Encoding' is 'chunked'
+    bool append_chunk_(const char* msg);
+    bool append_body_(const char* msg);
+
+public:
+
+    RequestReceiver(HttpRequest& httpmsg);
+    bool append(const char* msg);
+
+}; // class RequestReceiver
+
+} // namespace webstab
+
+#endif // WEBSTABLE_HTTP_REQUESTRECEIVER_H

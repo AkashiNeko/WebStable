@@ -1,6 +1,6 @@
-// File:     src/main.cpp
+// File:     src/file/FileCache.h
 // Author:   AkashiNeko
-// Project:  WebStable - Version 1.0
+// Project:  WebStable
 // Github:   https://github.com/AkashiNeko/WebStable/
 
 /* Copyright (c) 2024 AkashiNeko
@@ -24,14 +24,52 @@
  * SOFTWARE.
  */
 
-#include "app/ArgsParser.h"
-#include "app/Config.h"
-#include "core/WebServer.h"
+#pragma once
+#ifndef WEBSTABLE_FILE_FILECACHE_H
+#define WEBSTABLE_FILE_FILECACHE_H
 
-int main(int argc, char* argv[]) {
-    webstab::ArgsParser args(argc, argv);
-    args.parse();
-    webstab::Config config(args.conf_filepath());
-    webstab::WebServer server(config);
-    return server.exec();
-}
+// C++
+#include <list>
+#include <string>
+#include <unordered_map>
+#include <mutex>
+#include <shared_mutex>
+
+namespace webstab {
+
+class FileCache {
+    // types
+    struct FileInfo {
+        std::string filepath;
+        std::time_t time;
+        std::string content;
+    };
+    using List = std::list<FileInfo>;
+    using HashMap = std::unordered_map<std::string, List::iterator>;
+
+private:
+    // LRU list and map
+    List list_;
+    HashMap map_;
+
+    // locks
+    std::shared_mutex rwlock_;
+    std::mutex lru_mutex_;
+
+    size_t capacity_;
+    size_t size_;
+
+public:
+    explicit FileCache(size_t capacity = 100UL * 1024UL * 1024UL);
+
+    // non-copyable
+    FileCache(const FileCache&) = delete;
+    FileCache& operator=(const FileCache&) = delete;
+
+    bool get_file(const std::string& key, std::string& result) noexcept;
+
+}; // class FileCache
+
+} // namespace webstab
+
+#endif // WEBSTABLE_FILE_FILECACHE_H

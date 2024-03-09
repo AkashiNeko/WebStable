@@ -1,6 +1,6 @@
-// File:     src/main.cpp
+// File:     src/http/HttpResponse.cpp
 // Author:   AkashiNeko
-// Project:  WebStable - Version 1.0
+// Project:  WebStable
 // Github:   https://github.com/AkashiNeko/WebStable/
 
 /* Copyright (c) 2024 AkashiNeko
@@ -24,14 +24,31 @@
  * SOFTWARE.
  */
 
-#include "app/ArgsParser.h"
-#include "app/Config.h"
-#include "core/WebServer.h"
+#include "HttpResponse.h"
 
-int main(int argc, char* argv[]) {
-    webstab::ArgsParser args(argc, argv);
-    args.parse();
-    webstab::Config config(args.conf_filepath());
-    webstab::WebServer server(config);
-    return server.exec();
+namespace webstab {
+
+HttpResponse::HttpResponse(const std::string& version,
+        const std::string& statusCode,
+        const std::string& statusMessage)
+    : version(version),
+    status_code(statusCode),
+    status_message(statusMessage) {}
+
+// to string
+std::string HttpResponse::to_string() const {
+
+    if (version.empty() || status_code.empty() || status_message.empty())
+        return "";
+
+    std::string result =
+        version + ' ' + status_code + ' ' + status_message + "\r\n";
+
+    for (const auto& e : headers)
+        result += e.first + ": " + e.second + "\r\n";
+
+    result += "\r\n" + body;
+    return result;
 }
+
+} // namespace webstab

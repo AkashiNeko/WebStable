@@ -1,6 +1,6 @@
-// File:     src/main.cpp
+// File:     src/http/HttpResponse.h
 // Author:   AkashiNeko
-// Project:  WebStable - Version 1.0
+// Project:  WebStable
 // Github:   https://github.com/AkashiNeko/WebStable/
 
 /* Copyright (c) 2024 AkashiNeko
@@ -24,14 +24,39 @@
  * SOFTWARE.
  */
 
-#include "app/ArgsParser.h"
-#include "app/Config.h"
-#include "core/WebServer.h"
+#pragma once
+#ifndef WEBSTABLE_HTTP_HTTPRESPONSE_H
+#define WEBSTABLE_HTTP_HTTPRESPONSE_H
 
-int main(int argc, char* argv[]) {
-    webstab::ArgsParser args(argc, argv);
-    args.parse();
-    webstab::Config config(args.conf_filepath());
-    webstab::WebServer server(config);
-    return server.exec();
-}
+// C++
+#include <string>
+#include <unordered_map>
+
+namespace webstab {
+
+struct HttpResponse {
+public:
+    std::string version;
+    std::string status_code;
+    std::string status_message;
+    std::unordered_map<std::string, std::string> headers;
+    std::string body;
+
+public:
+
+    HttpResponse(const std::string& version = "HTTP/1.1",
+                const std::string& status_code = "200",
+                const std::string& status_message = "OK");
+
+    inline void set_header(const std::string& key, const std::string& value) {
+        headers[key] = value;
+    }
+
+    // to string
+    std::string to_string() const;
+
+}; // struct HttpResponse
+
+} // namespace webstab
+
+#endif // WEBSTABLE_HTTP_HTTPRESPONSE_H

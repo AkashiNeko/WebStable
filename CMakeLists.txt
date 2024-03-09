@@ -9,8 +9,8 @@ set(CMAKE_BUILD_TYPE Release)
 endif()
 set(CMAKE_CXX_FLAGS_RELEASE -Ofast)
  
-set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -O0 -g -Wall")
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O0 -g -Wall")
+set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -Ofast -Wall")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Ofast -Wall")
 
 file(GLOB_RECURSE SRC_LIST ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp)
 

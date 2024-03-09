@@ -1,4 +1,28 @@
-// utility/url.cpp
+// File:     src/http/Url.cpp
+// Author:   AkashiNeko
+// Project:  WebStable
+// Github:   https://github.com/AkashiNeko/WebStable/
+
+/* Copyright (c) 2024 AkashiNeko
+ * 
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * 
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
 
 #include "Url.h"
 
@@ -80,10 +104,10 @@ void Url::parse_user_info_(std::string&& user_info) {
 
     size_t pos = user_info.find_first_of(':');
     if (pos == std::string::npos) {
-        encode_string_(this->user_, std::move(user_info));
+        encode_string_(this->user, std::move(user_info));
     } else {
-        encode_string_(this->user_, user_info.substr(0, pos));
-        encode_string_(this->password_, user_info.substr(pos + 1));
+        encode_string_(this->user, user_info.substr(0, pos));
+        encode_string_(this->password, user_info.substr(pos + 1));
     }
 }
 
@@ -102,21 +126,21 @@ void Url::parse_authority_(std::string&& authority) {
     // parse host port
     size_t posPort = authority.find_first_of(':', pos);
     if (posPort != std::string::npos) {
-        encode_string_(this->host_, authority.substr(pos, posPort - pos), "/");
+        encode_string_(this->host, authority.substr(pos, posPort - pos), "/");
         pos = posPort + 1;
         std::string strPort = authority.substr(posPort + 1);
         if (strPort.empty()) {
-            this->port_ = get_default_port_(this->scheme_);
+            this->port = get_default_port_(this->scheme);
         } else {
             try {
-                this->port_ = strPort;
+                this->port = strPort;
             } catch (...) {
-                throw_except("[url] port \'", strPort, "\' is invalid");
+                throw "port is invalid";
             }
         }
     } else {
-        this->port_ = get_default_port_(this->scheme_);
-        this->host_ = authority.substr(pos);
+        this->port = get_default_port_(this->scheme);
+        this->host = authority.substr(pos);
     }
 }
 
@@ -136,8 +160,8 @@ void Url::parse_authority_after_(std::string&& str) {
     size_t fragmentPos = str.find_first_of('#');
     size_t pathEnd = std::min(queryPos, fragmentPos);
     if (str.front() == '/') {
-        this->path_.clear();
-        encode_string_(this->path_, str.substr(0, pathEnd), "/");
+        this->path.clear();
+        encode_string_(this->path, str.substr(0, pathEnd), "/");
     }
 
     // /abc/def?a=1&b=2#section
@@ -149,19 +173,19 @@ void Url::parse_authority_after_(std::string&& str) {
         return;
     } else if (queryPos == std::string::npos) {
         // no query
-        encode_string_(this->fragment_, str.substr(pathEnd + 1));
+        encode_string_(this->fragment, str.substr(pathEnd + 1));
     } else if (fragmentPos == std::string::npos) {
         // no fragment
-        encode_string_(this->query_, str.substr(pathEnd + 1), "=&?");
+        encode_string_(this->query, str.substr(pathEnd + 1), "=&?");
     } else {
         if (fragmentPos < queryPos) {
             // #....?....
-            encode_string_(this->query_, str.substr(queryPos + 1), "=&?");
-            encode_string_(this->fragment_, str.substr(fragmentPos + 1, queryPos - fragmentPos - 1));
+            encode_string_(this->query, str.substr(queryPos + 1), "=&?");
+            encode_string_(this->fragment, str.substr(fragmentPos + 1, queryPos - fragmentPos - 1));
         } else {
             // ?....#....
-            encode_string_(this->query_, str.substr(queryPos + 1, fragmentPos - queryPos - 1), "=&?");
-            encode_string_(this->fragment_, str.substr(fragmentPos + 1));
+            encode_string_(this->query, str.substr(queryPos + 1, fragmentPos - queryPos - 1), "=&?");
+            encode_string_(this->fragment, str.substr(fragmentPos + 1));
         }
     }
 }
@@ -171,18 +195,18 @@ void Url::parse_url_() {
     // \__/
     //   |
     // scheme
-    size_t pos = raw_.find_first_of(":");
-    if (pos == std::string::npos || pos + 2 >= raw_.size()
-        || raw_.substr(pos + 1, 2) != "//") {
-        throw_except("[url] invalid url: \'", raw_, '\'');
+    size_t pos = raw.find_first_of(":");
+    if (pos == std::string::npos || pos + 2 >= raw.size()
+            || raw.substr(pos + 1, 2) != "//") {
+        throw "invalid url";
     }
-    this->scheme_ = raw_.substr(0, pos);
+    this->scheme = raw.substr(0, pos);
 
     // get authority and what follows
     pos += 3;
     size_t authorityEnd = std::string::npos;
-    for (size_t i = pos; i < raw_.size(); ++i) {
-        if (raw_[i] == '/' || raw_[i] == '?' || raw_[i] == '#') {
+    for (size_t i = pos; i < raw.size(); ++i) {
+        if (raw[i] == '/' || raw[i] == '?' || raw[i] == '#') {
             authorityEnd = i; break;
         }
     }
@@ -195,47 +219,51 @@ void Url::parse_url_() {
     //                     \/                          \/
     //                parseAuthority           parseAuthorityAfter
 
-    parse_authority_(raw_.substr(pos, authorityEnd - pos));
+    parse_authority_(raw.substr(pos, authorityEnd - pos));
     if (authorityEnd != std::string::npos) {
-        parse_authority_after_(raw_.substr(authorityEnd));
+        parse_authority_after_(raw.substr(authorityEnd));
     }
 }
 
 
-Url::Url(std::string&& url) :raw_(std::move(url)) {
+Url::Url(std::string&& url) : raw(std::move(url)) {
     parse_url_();
 }
 
-Url::Url(const std::string& url) :raw_(url) {
+Url::Url(const std::string& url) : raw(url) {
     parse_url_();
 }
 
 Url::Url(Url&& url)
-        : raw_(std::move(url.raw_)), scheme_(std::move(url.scheme_)),
-    user_(std::move(url.user_)), password_(std::move(url.password_)),
-    host_(std::move(url.host_)), path_(std::move(url.path_)),
-    query_(std::move(url.query_)), fragment_(std::move(url.fragment_)),
-    port_(url.port_) {
-    url.port_ = 0;
+        : raw(std::move(url.raw)),
+        scheme(std::move(url.scheme)),
+        user(std::move(url.user)),
+        password(std::move(url.password)),
+        host(std::move(url.host)),
+        path(std::move(url.path)),
+        query(std::move(url.query)),
+        fragment(std::move(url.fragment)),
+        port(url.port) {
+    url.port = 0;
 }
 
 void Url::parse(const std::string& url) {
-    this->raw_ = url;
+    this->raw = url;
     parse_url_();
 }
 
 void Url::parse(std::string&& url) {
-    this->raw_ = std::move(url);
+    this->raw = std::move(url);
     parse_url_();
 }
 
 std::string Url::authority_after() const {
     std::string result;
-    result += this->path_;
-    if (!this->query_.empty())
-        result += '?' + this->query_;
-    if (!this->fragment_.empty())
-        result += '#' + this->fragment_;
+    result += this->path;
+    if (!this->query.empty())
+        result += '?' + this->query;
+    if (!this->fragment.empty())
+        result += '#' + this->fragment;
     return result;
 }
 
@@ -248,18 +276,18 @@ void Url::authority_after(std::string&& authority) {
 }
 
 std::string Url::to_string() const {
-    if (this->scheme_.empty()) return "";
-    std::string result = this->scheme_ + "://";
-    if (!this->user_.empty()) {
-        if (!this->password_.empty()) {
-            result += this->user_ + ':' + this->password_ + '@';
+    if (this->scheme.empty()) return "";
+    std::string result = this->scheme + "://";
+    if (!this->user.empty()) {
+        if (!this->password.empty()) {
+            result += this->user + ':' + this->password + '@';
         } else {
-            result += this->user_ + '@';
+            result += this->user + '@';
         }
     }
-    result += this->host_;
-    if (this->port_ != 0 && this->port_.get() != get_default_port_(this->scheme_).get()) {
-        result += ":" + this->port_.to_string();
+    result += this->host;
+    if (this->port != 0 && this->port.get() != get_default_port_(this->scheme).get()) {
+        result += ":" + this->port.to_string();
     }
     result += this->authority_after();
     return result;

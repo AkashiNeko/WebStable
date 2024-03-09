@@ -1,6 +1,37 @@
-// WebServer.cpp
+// File:     src/core/WebServer.cpp
+// Author:   AkashiNeko
+// Project:  WebStable
+// Github:   https://github.com/AkashiNeko/WebStable/
+
+/* Copyright (c) 2024 AkashiNeko
+ * 
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * 
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
 
 #include "WebServer.h"
+
+// C++
+#include <iostream>
+
+// WebStable
+#include "core/Responser.h"
+#include "http/RequestReceiver.h"
 
 namespace webstab {
 
@@ -53,18 +84,14 @@ WebServer::WebServer(const Config& config)
     thread_pool_.set_task([this](nano::sock_t sock) {
         char buf[10240]{};
         HttpRequest request;
-        HttpAssembler ha(request);
-        auto receive = [&sock, &buf]() -> int {
-            try {
-                return nano::recv_msg(sock, buf, sizeof(buf) - 1);
-            } catch (...) {
-                return 0;
-            }
-        };
+        RequestReceiver ha(request);
         while (true) {
-            int recv_length = receive();
+            int recv_length = 0;
+            try {
+                recv_length = nano::recv_msg(sock, buf, sizeof(buf) - 1);
+            } catch (const nano::NanoExcept &e) { (void)0; }
+
             if (recv_length == 0) {
-                
                 this->timer_.cancel(sock);
                 nano::close_socket(sock);
                 return;
@@ -90,6 +117,7 @@ WebServer::~WebServer() {
     server_socket_.close();
     poller_->close();
     thread_pool_.shutdown();
+    timer_.stop();
     std::cout << "webserver closed" << std::endl;
 }
 

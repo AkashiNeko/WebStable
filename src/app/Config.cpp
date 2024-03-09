@@ -1,11 +1,45 @@
+// File:     src/app/Config.cpp
+// Author:   AkashiNeko
+// Project:  WebStable
+// Github:   https://github.com/AkashiNeko/WebStable/
+
+/* Copyright (c) 2024 AkashiNeko
+ * 
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * 
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
 #include "Config.h"
+
+// C
+#include <cstring>
+
+// C++
+#include <iostream>
+#include <fstream>
+
+namespace webstab {
 
 namespace {
 
-const char* DefaultConfName =
-    "webstable.conf";
+const char* DefaultConfName = "webstable.conf";
 
-void rm_front_blank_(std::string& s) {
+inline void rm_front_blank_(std::string& s) {
     if (!s.empty()) {
         size_t i = 0, sz = s.size();
         size_t offset = s.find_first_not_of(" \t");
@@ -16,7 +50,7 @@ void rm_front_blank_(std::string& s) {
     }
 }
 
-void rm_back_blank_(std::string& s) {
+inline void rm_back_blank_(std::string& s) {
     if (!s.empty()) {
         size_t pos = s.find_last_not_of(" \t");
         if (pos != std::string::npos && pos != s.size() - 1)
@@ -55,19 +89,6 @@ void is_valid_path_(std::filesystem::path& file) {
             << " does not exists" << std::endl;
         exit(1);
     }
-}
-
-nano::AddrPort parse_addr_port_(const std::string& str) {
-    nano::AddrPort result;
-    size_t pos = str.find_last_of(':');
-    if (pos == std::string::npos) {
-        result.addr(nano::Addr(str));
-        result.port(80);
-    } else {
-        result.addr(nano::Addr(str.substr(0, pos)));
-        result.port(nano::Port(str.substr(pos + 1)));
-    }
-    return result;
 }
 
 void split_keys_(const std::string& key,
@@ -110,8 +131,6 @@ SectionType parse_section_(const std::string& line, std::string_view fname, size
 }
 
 } // anonymous namespace
-
-namespace webstab {
 
 Config::Config() : server_({
     { "listen", "0.0.0.0:80" },

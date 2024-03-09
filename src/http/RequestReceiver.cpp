@@ -1,6 +1,30 @@
-// http/http_assembler.cpp
+// File:     src/http/RequestReceiver.cpp
+// Author:   AkashiNeko
+// Project:  WebStable
+// Github:   https://github.com/AkashiNeko/WebStable/
 
-#include "HttpAssembler.h"
+/* Copyright (c) 2024 AkashiNeko
+ * 
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * 
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
+#include "RequestReceiver.h"
 
 namespace webstab {
 
@@ -33,7 +57,7 @@ std::string capitalize_first_letter_(std::string&& str) {
 
 } // anonymous namespace
 
-bool HttpAssembler::fill_head_(HttpRequest& request, const char* msg) {
+bool RequestReceiver::fill_head_(HttpRequest& request, const char* msg) {
     head_cache_ += msg;
     body_begin_pos_ = head_cache_.find("\r\n\r\n", body_begin_pos_cache_);
     // +------------------------------+
@@ -115,7 +139,7 @@ bool HttpAssembler::fill_head_(HttpRequest& request, const char* msg) {
 
 // append chunks when 'Transfer-Encoding' is 'chunked'
 
-bool HttpAssembler::append_chunk_(const char* msg) {
+bool RequestReceiver::append_chunk_(const char* msg) {
     chunk_cache_ += msg;
     size_t length = chunk_cache_.size();
     while (chunk_base_ < length) {
@@ -157,7 +181,7 @@ bool HttpAssembler::append_chunk_(const char* msg) {
 }
 
 
-bool HttpAssembler::append_body_(const char* msg) {
+bool RequestReceiver::append_body_(const char* msg) {
     // when 'Transfer-Encoding' is 'chunked'
     if (chunked_transfer_encoding_)
         return append_chunk_(msg);
@@ -179,9 +203,9 @@ bool HttpAssembler::append_body_(const char* msg) {
 
 // public
 
-HttpAssembler::HttpAssembler(HttpRequest& httpmsg) :httpmsg_(httpmsg) {}
+RequestReceiver::RequestReceiver(HttpRequest& httpmsg) :httpmsg_(httpmsg) {}
 
-bool HttpAssembler::append(const char* msg) {
+bool RequestReceiver::append(const char* msg) {
     if (is_ok_)
         return true;
 
@@ -192,4 +216,4 @@ bool HttpAssembler::append(const char* msg) {
     }
 }
 
-}  // namespace webstab
+} // namespace webstab
