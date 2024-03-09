@@ -9,6 +9,7 @@
 #include <mutex>
 #include <thread>
 #include <vector>
+#include <map>
 #include <nanonet.h>
 
 namespace webstab {
@@ -24,8 +25,8 @@ class TimerWheel {
     bool running_ = false;
 
 private:
-    void insert_nolock_(nano::sock_t socket);
-    void remove_nolock_(nano::sock_t socket);
+    bool insert_(nano::sock_t socket);
+    bool remove_(nano::sock_t socket);
 
 public:
 
@@ -34,9 +35,9 @@ public:
 
     void start();
     void stop();
-    void timing(nano::sock_t socket);
-    void cancel(nano::sock_t socket);
-    void update(nano::sock_t socket);
+    bool timing(nano::sock_t socket);
+    bool cancel(nano::sock_t socket);
+    bool update(nano::sock_t socket);
 };
 
 } // namespace webstab

@@ -51,7 +51,6 @@ WebServer::WebServer(const Config& config)
     timer_.start();
 
     thread_pool_.set_task([this](nano::sock_t sock) {
-        timer_.cancel(sock);
         char buf[10240]{};
         HttpRequest request;
         HttpAssembler ha(request);
@@ -65,17 +64,19 @@ WebServer::WebServer(const Config& config)
         while (true) {
             int recv_length = receive();
             if (recv_length == 0) {
+                
+                this->timer_.cancel(sock);
                 nano::close_socket(sock);
                 return;
             } else if (recv_length == -1) {
                 // TODO: receive done
                 if (Responser(config_, request, sock).reply()
                         && insert_sock_(sock)) {
-                    timer_.timing(sock);
+                    this->timer_.timing(sock);
                 } else {
+                    this->timer_.cancel(sock);
                     nano::close_socket(sock);
                 }
-
                 break;
             } else {
                 // TODO: append message
@@ -112,10 +113,17 @@ int WebServer::exec() {
                 // insert to poller
                 nano::sock_t add_sock = INVALID_SOCKET;
                 ssize_t read_result = ::read(fd, &add_sock, sizeof(add_sock));
-                if (read_result > 0)
-                    poller_->insert(add_sock, poller_event_);
+                if (read_result > 0) {
+                    try {
+                        poller_->insert(add_sock, poller_event_);
+                    } catch (const iohub::IOHubExcept& e) {
+                        timer_.cancel(add_sock);
+                        // printf(e.what());
+                    }
+                }
             } else {
                 // link fd
+                timer_.cancel(fd);
                 poller_->erase(fd);
                 thread_pool_.push(fd);
             }

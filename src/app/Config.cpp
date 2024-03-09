@@ -5,17 +5,6 @@ namespace {
 const char* DefaultConfName =
     "webstable.conf";
 
-const char* DefaultConfText =
-    "[server]"                          "\n"
-    "    listen = 0.0.0.0:80"           "\n"
-    ""                                  "\n"
-    "[static]"                          "\n"
-    "    / = www/"                      "\n"
-    ""                                  "\n"
-    "[error]"                           "\n"
-    "    404 = /404.html"               "\n"
-    "    500 502 503 504 = /50x.html"   "\n";
-
 void rm_front_blank_(std::string& s) {
     if (!s.empty()) {
         size_t i = 0, sz = s.size();
