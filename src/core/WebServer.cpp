@@ -29,6 +29,9 @@
 // C++
 #include <iostream>
 
+// os
+#include <signal.h>
+
 // WebStable
 #include "core/Responser.h"
 #include "http/RequestReceiver.h"
@@ -63,11 +66,13 @@ WebServer::WebServer(const Config& config)
     // make pipe
     if (-1 == ::pipe(insert_pipe_))
         throw std::strerror(errno);
+    ::signal(SIGPIPE, SIG_IGN);
     poller_->insert(insert_pipe_[0], poller_event_);
     // listen
     nano::AddrPort listen = config_.get_listen();
     server_socket_.reuse_addr(true);
     server_socket_.set_blocking(false);
+    server_socket_.set_option(SOL_SOCKET, SO_LINGER, linger{1, 1});
     try {
         server_socket_.bind(listen.addr(), listen.port());
         poller_->insert(server_socket_.get(), poller_event_);
@@ -133,6 +138,8 @@ int WebServer::exec() {
                 while (true) {
                     // accept new link
                     auto sock = nano::accept_from(serv, nullptr, nullptr);
+                    struct linger tmp = {1, 1};
+                    setsockopt(sock, SOL_SOCKET, SO_LINGER, &tmp, sizeof(tmp));
                     if (sock == INVALID_SOCKET) break;
                     nano::set_blocking(sock, false);
                     poller_->insert(sock, poller_event_);

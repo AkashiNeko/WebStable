@@ -29,6 +29,8 @@
 // WebStable
 #include "app/version.h"
 
+#include <cstring>
+
 namespace webstab {
 
 namespace {
@@ -79,9 +81,37 @@ bool Responser::send_respond_(const std::filesystem::path& path,
     respond.headers["Content-Length"] = std::to_string(body.size());
     std::string str = respond.to_string();
     try {
-        nano::send_msg(sock_, str.c_str(), str.size(), MSG_NOSIGNAL);
-        nano::send_msg(sock_, body.c_str(), body.size(), MSG_NOSIGNAL);
-    } catch (const nano::NanoExcept& e) {
+        do {
+            try {
+                nano::send_msg(sock_, str.c_str(), str.size(), MSG_NOSIGNAL);
+            } catch (const nano::NanoExcept& e) {
+                if (errno == EWOULDBLOCK) {
+                    continue;
+                } else {
+                    return false;
+                }
+            }
+        } while (false);
+        size_t last = body.size();
+        const size_t SingleSendLength = 8192U;
+        for (const char* p = body.c_str(); last;) {
+            size_t send_len = std::min(last, SingleSendLength);
+            size_t ret = -1;
+            while (true) {
+                try {
+                    ret = nano::send_msg(sock_, p, send_len);
+                } catch (const std::exception& e) {
+                    if (errno == EAGAIN)
+                        continue;
+                    else
+                        return false;
+                }
+                break;
+            }
+            p += ret;
+            last -= ret;
+        }
+    } catch (...) {
         return false;
     }
     return true;
@@ -92,13 +122,10 @@ Responser::Responser(const Config& cfg,
     : cfg_(cfg), request_(request), sock_(sock) {}
 
 bool Responser::reply() {
-    // std::cout << "\033[36m" << request_.method << ' '
-        // << request_.path << ' ' << request_.version << "\033[0m" << std::endl;
     auto path = cfg_.static_path("root").append(request_.relative_path());
     if (std::filesystem::is_directory(path))
         path.append(cfg_.server("index"));
     std::string file_content;
-    // std::cout << "local: \033[33m" << path.c_str() << "\033[0m" << std::endl;
     bool send_success = cache_.get_file(path.string(), file_content)
         ? send_respond_(path, file_content) // get file success
         : send_default_404_page_();         // get file failed
